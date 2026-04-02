@@ -137,3 +137,17 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Hackathon specific ignores
+node_modules/
+dist/
+.env
+output/reports/*
+output/risk-decisions/*
+output/trade-logs/*
+!output/reports/.gitkeep
+!output/risk-decisions/.gitkeep
+!output/trade-logs/.gitkeep
+*.log
+.openclaw/
+__pycache__/
