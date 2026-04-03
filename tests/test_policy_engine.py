@@ -14,26 +14,29 @@ from scripts import policy_engine
 @pytest.fixture
 def mock_policy():
     return {
-        "global": {
-            "denied_tools": ["shell"],
-            "network": {
+        "trading": {
+            "order_limits": {
+                "per_order_max_usd": 2500,
+                "daily_aggregate_max_usd": 10000,
+                "per_order_max_shares": 100
+            },
+            "approved_tickers": {"symbols": ["AAPL", "MSFT"]},
+            "time_restrictions": {
+                "market_hours_only": {"enabled": False}
+            }
+        },
+        "data_safety": {
+            "no_external_exfiltration": {
                 "allowed_domains": ["paper-api.alpaca.markets"],
                 "blocked_domains": ["api.alpaca.markets"]
             }
         },
-        "market_hours": {"enabled": False},
-        "trading": {
-            "allowed_tickers": ["AAPL", "MSFT"],
-            "max_position_size": 100,
-            "max_daily_spend_usd": 10000,
-            "max_single_order_usd": 2500
-        },
         "delegation": {
-            "token_ttl_seconds": 300,
-            "require_risk_approval": True,
-            "max_concurrent_tokens": 3
+            "trader_delegation": {
+                "expiry_minutes": 5
+            }
         },
-        "agents": {
+        "agent_roles": {
             "trader": {
                 "allowed_tools": ["place_order"],
                 "denied_tools": ["shell"]

@@ -20,6 +20,7 @@ def _env(key: str) -> str:
 
 
 def _trading_client():
+    _env("ARMORIQ_API_KEY")
     from alpaca.trading.client import TradingClient
     return TradingClient(
         api_key=_env("ALPACA_API_KEY"),
@@ -29,6 +30,7 @@ def _trading_client():
 
 
 def _data_client():
+    _env("ARMORIQ_API_KEY")
     from alpaca.data.historical import StockHistoricalDataClient
     return StockHistoricalDataClient(
         api_key=_env("ALPACA_API_KEY"),
