@@ -105,28 +105,28 @@ def _result(passed: bool, check: str, detail: str) -> dict:
 
 
 def check_ticker(ticker: str, policy: dict) -> dict:
-    allowed = policy.get("trading", {}).get("allowed_tickers", [])
+    allowed = policy.get("trading", {}).get("approved_tickers", {}).get("symbols", [])
     if ticker.upper() in allowed:
         return _result(True, "ticker", f"{ticker} is in the allowed list")
     return _result(False, "ticker", f"{ticker} not in allowed list: {allowed}")
 
 
 def check_order_size(amount_usd: float, policy: dict) -> dict:
-    limit = policy.get("trading", {}).get("max_single_order_usd", 0)
+    limit = policy.get("trading", {}).get("order_limits", {}).get("per_order_max_usd", 0)
     if amount_usd <= limit:
         return _result(True, "order_size", f"${amount_usd:.2f} within single-order limit ${limit}")
     return _result(False, "order_size", f"${amount_usd:.2f} exceeds single-order limit ${limit}")
 
 
 def check_share_count(shares: int, policy: dict) -> dict:
-    limit = policy.get("trading", {}).get("max_position_size", 0)
+    limit = policy.get("trading", {}).get("order_limits", {}).get("per_order_max_shares", 0)
     if shares <= limit:
         return _result(True, "share_count", f"{shares} shares within position limit {limit}")
     return _result(False, "share_count", f"{shares} shares exceeds position limit {limit}")
 
 
 def check_daily_limit(amount_usd: float, policy: dict) -> dict:
-    limit = policy.get("trading", {}).get("max_daily_spend_usd", 0)
+    limit = policy.get("trading", {}).get("order_limits", {}).get("daily_aggregate_max_usd", 0)
     current = _get_today_spend()
     projected = current + amount_usd
     if projected <= limit:
@@ -138,7 +138,7 @@ def check_daily_limit(amount_usd: float, policy: dict) -> dict:
 
 
 def check_market_hours(policy: dict) -> dict:
-    mh = policy.get("market_hours", {})
+    mh = policy.get("trading", {}).get("time_restrictions", {}).get("market_hours_only", {})
     if not mh.get("enabled", False):
         return _result(True, "market_hours", "Market hours check disabled in policy")
 
@@ -166,11 +166,7 @@ def check_market_hours(policy: dict) -> dict:
 
 
 def check_role_permission(agent: str, tool: str, policy: dict) -> dict:
-    agents_cfg = policy.get("agents", {})
-    global_denied = policy.get("global", {}).get("denied_tools", [])
-
-    if tool in global_denied:
-        return _result(False, "role_permission", f"Tool '{tool}' is globally denied")
+    agents_cfg = policy.get("agent_roles", {})
 
     agent_cfg = agents_cfg.get(agent)
     if agent_cfg is None:
@@ -199,7 +195,7 @@ def check_delegation(delegation: dict, policy: dict) -> dict:
       - issued_at:  ISO timestamp of issuance
       - token_id:   unique token identifier
     """
-    deleg_cfg = policy.get("delegation", {})
+    deleg_cfg = policy.get("delegation", {}).get("trader_delegation", {})
 
     if not delegation:
         return _result(False, "delegation", "No delegation token provided")
@@ -216,7 +212,7 @@ def check_delegation(delegation: dict, policy: dict) -> dict:
     if delegation["issued_to"] != "trader":
         return _result(False, "delegation", f"Delegation must target trader, got '{delegation['issued_to']}'")
 
-    ttl = deleg_cfg.get("token_ttl_seconds", 300)
+    ttl = deleg_cfg.get("expiry_minutes", 5) * 60
     try:
         issued = datetime.fromisoformat(delegation["issued_at"])
         if issued.tzinfo is None:
@@ -233,7 +229,7 @@ def check_delegation(delegation: dict, policy: dict) -> dict:
 
 
 def check_data_safety(domain: str, policy: dict) -> dict:
-    network = policy.get("global", {}).get("network", {})
+    network = policy.get("data_safety", {}).get("no_external_exfiltration", {})
     blocked = network.get("blocked_domains", [])
     allowed = network.get("allowed_domains", [])
 
