@@ -1,0 +1,44 @@
+{
+  "$schema": "https://openclaw.ai/schemas/config/2026.3.json",
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "gateway": {
+    "mode": "local",
+    "auth": {
+      "mode": "token",
+      "token": "905cd0e40e5f61572045d4f07912cf9bbb00cabc2af9e880"
+    }
+  },
+  "skills": {
+    "load": {
+      "extraDirs": [
+        "../skills"
+      ]
+    }
+  },
+  "plugins": {
+    "allow": [
+      "groq",
+      "armoriq",
+      "@openclaw/armoriq",
+      "armorclaw"
+    ],
+    "entries": {
+      "groq": {
+        "enabled": true,
+        "config": {}
+      },
+      "armoriq": {
+        "enabled": true
+      }
+    }
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.3.28",
+    "lastTouchedAt": "2026-04-03T06:30:53.913Z"
+  }
+}

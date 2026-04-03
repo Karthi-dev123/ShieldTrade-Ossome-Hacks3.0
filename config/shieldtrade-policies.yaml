@@ -1,0 +1,73 @@
+enforcement: "deterministic"
+version: "0.1.0"
+
+global:
+  denied_tools:
+    - shell
+    - exec
+    - web_fetch
+  network:
+    allowed_domains:
+      - "paper-api.alpaca.markets"
+      - "data.alpaca.markets"
+    blocked_domains:
+      - "api.alpaca.markets"
+
+market_hours:
+  enabled: false
+  timezone: "US/Eastern"
+
+trading:
+  paper_only: true
+  allowed_tickers:
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - NVDA
+    - TSLA
+    - META
+  max_position_size: 100
+  max_daily_spend_usd: 10000
+  max_single_order_usd: 2500
+
+delegation:
+  token_ttl_seconds: 300
+  require_risk_approval: true
+  max_concurrent_tokens: 3
+
+agents:
+  analyst:
+    allowed_tools:
+      - fetch_market_data
+      - analyze_ticker
+      - write_report
+    denied_tools:
+      - place_order
+      - shell
+      - exec
+      - web_fetch
+
+  risk_manager:
+    allowed_tools:
+      - evaluate_risk
+      - check_policy
+      - issue_delegation
+    denied_tools:
+      - place_order
+      - fetch_market_data
+      - shell
+      - exec
+      - web_fetch
+
+  trader:
+    allowed_tools:
+      - place_order
+      - check_position
+      - log_trade
+    denied_tools:
+      - fetch_market_data
+      - analyze_ticker
+      - shell
+      - exec
+      - web_fetch
