@@ -1,73 +1,126 @@
-# ShieldTrade Hackathon Repository
+# ShieldTrade — M3 Phase (Policy & Enforcement)
 
-This repository contains the ShieldTrade implementation for the hackathon workflow.
+This branch contains the complete M3 deliverable for the ArmorIQ x OpenClaw hackathon: a declarative policy model and a deterministic enforcement engine for trade validation.
 
-Current completed modules in this repo:
-- M2: Alpaca paper-trading bridge
+## Branch Scope
 
-## Repository Structure
+- Phase owner: M3 (Policy & Enforcement)
+- Branch: feature/policy-engine
+- Purpose: enforce financial constraints in code, not prompt instructions
 
-```text
-scripts/
-	alpaca_bridge.py
-output/
-	reports/
-	risk-decisions/
-	trade-logs/
-project-docs/
-	shieldtrade-team-guide.md
-requirements.txt
-```
+## What Is Implemented
 
-## Prerequisites
+1. Declarative policy model in YAML
+	- Defines agent role permissions
+	- Defines trading constraints (ticker, size, daily cap, market hours)
+	- Defines data safety constraints (PII, credential access, exfiltration)
+	- Defines delegation constraints (approval, expiry, quantity/symbol match)
 
-- Python 3.10+
-- Alpaca paper trading account
+2. Policy enforcement engine in Python
+	- Loads YAML policy at runtime
+	- Evaluates trade requests and returns structured PASS/FAIL checks
+	- Evaluates role-tool permission checks
+	- Evaluates delegation token checks
+	- Supports CLI commands required by the team guide
 
-## Setup
+3. M3 validation suite
+	- Includes a self-test script for all required test scenarios
+	- Verifies positive and negative cases for trade, role, and delegation checks
+
+## Files Added for M3
+
+- config/shieldtrade-policies.yaml
+- scripts/policy_engine.py
+- scripts/m3_selftest.py
+- scripts/alpaca_realtime_check.py
+- requirements.txt
+
+## Installation
+
+From this branch folder:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-Create `.env` from `.env.example` and set your real keys.
+## Environment Setup
 
-## M2: Alpaca Bridge
+Create a local `.env` file at the branch root and add your keys:
 
-Main script:
-- `scripts/alpaca_bridge.py`
-
-Supported commands:
-
-```bash
-python scripts/alpaca_bridge.py account
-python scripts/alpaca_bridge.py positions
-python scripts/alpaca_bridge.py quote AAPL
-python scripts/alpaca_bridge.py bars AAPL 1Day 5
-python scripts/alpaca_bridge.py order AAPL 1 buy
-python scripts/alpaca_bridge.py order AAPL 1 sell
+```dotenv
+GROQ_API_KEY=...
+ALPACA_API_KEY=...
+ALPACA_SECRET_KEY=...
+ARMORIQ_API_KEY=...
+GEMINI_API_KEY1=...
+GEMINI_API_KEY2=...
+GEMINI_API_KEY3=...
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
 ```
 
-Validation sequence (guide-aligned):
+Do not commit `.env`.
+
+## CLI Usage
+
+### 1) Validate a trade
 
 ```bash
-python scripts/alpaca_bridge.py account
-python scripts/alpaca_bridge.py quote AAPL
-python scripts/alpaca_bridge.py bars AAPL 1Day 5
-python scripts/alpaca_bridge.py positions
-python scripts/alpaca_bridge.py order AAPL 1 buy
-python scripts/alpaca_bridge.py positions
-python scripts/alpaca_bridge.py order AAPL 1 sell
-python scripts/alpaca_bridge.py quote INVALIDXYZ
-python scripts/alpaca_bridge.py order AAPL
+python scripts/policy_engine.py check-trade '{"symbol":"AAPL","qty":10,"side":"buy","price":150}' trader
 ```
 
-Notes:
-- The bridge returns JSON for both success and error responses.
-- `positions` includes pending open orders to make order state visible before fills.
-- `order` handles conflicting opposite open orders for the same symbol.
+### 2) Check role permission
 
-## Security
+```bash
+python scripts/policy_engine.py check-role analyst place_order
+python scripts/policy_engine.py check-role trader place_order
+```
 
-- Never commit `.env` or secret keys.
-- Rotate any key that was ever shared in logs or chat.
+### 3) Check delegation constraints
+
+```bash
+python scripts/policy_engine.py check-delegation \
+  '{"status":"APPROVED","to_agent":"trader","approved_action":{"symbol":"AAPL","max_quantity":10},"expires_at":"2099-12-31T23:59:59Z"}' \
+  '{"symbol":"AAPL","qty":10}'
+```
+
+### 4) Full policy validation
+
+```bash
+python scripts/policy_engine.py validate-all '{"symbol":"AAPL","qty":10,"side":"buy","price":150}' trader
+```
+
+### 5) Real-time Alpaca quote
+
+```bash
+python -m pip install -r requirements.txt
+python scripts/alpaca_realtime_check.py quote AAPL iex
+```
+
+## Run M3 Test Suite
+
+```bash
+python scripts/m3_selftest.py
+```
+
+Expected final line:
+
+```text
+ALL_PASS=True
+```
+
+## Enforcement Outcomes
+
+- ALLOW only when all checks pass
+- BLOCK when any check fails
+- Structured JSON output includes:
+  - decision (ALLOW/BLOCK)
+  - all_passed
+  - failed_checks
+  - per-check pass/fail details
+
+## Notes
+
+- The market-hours check depends on timezone data.
+- requirements.txt includes tzdata for Windows/Python environments where IANA timezone data is missing.
+- This branch is intentionally isolated to M3 scope and does not include M1/M2/M4 integration work.

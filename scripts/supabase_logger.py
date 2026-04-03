@@ -15,7 +15,7 @@ def _get_client():
     global _client
     if _client is None:
         url = os.environ.get("SUPABASE_URL")
-        key = os.environ.get("SUPABASE_SERVICE_KEY")
+        key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
         if not url or not key:
             return None
         from supabase import create_client

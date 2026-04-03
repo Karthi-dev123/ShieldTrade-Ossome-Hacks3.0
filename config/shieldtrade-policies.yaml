@@ -1,0 +1,138 @@
+metadata:
+  version: "1.0.0"
+  system: "ShieldTrade"
+  description: "Intent-enforced multi-agent financial advisory policies"
+  created_by: "Team Avengers"
+  enforcement: "deterministic"
+
+agent_roles:
+  analyst:
+    description: "Researches equities and generates recommendations"
+    allowed_tools:
+      - market_data_fetch
+      - write_report
+      - recommend_trade
+    denied_tools:
+      - place_order
+      - get_account
+      - shell
+      - web_fetch
+    file_access:
+      read:
+        - "/data/market/*"
+        - "/data/earnings/*"
+      write:
+        - "/output/reports/*"
+
+  risk_manager:
+    description: "Validates recommendations against portfolio constraints"
+    allowed_tools:
+      - read_portfolio
+      - check_limits
+      - approve_trade
+      - reject_trade
+    denied_tools:
+      - place_order
+      - market_data_fetch
+      - shell
+    file_access:
+      read:
+        - "/output/reports/*"
+        - "/data/portfolio/*"
+      write:
+        - "/output/risk-decisions/*"
+
+  trader:
+    description: "Executes approved trades within delegated scope only"
+    allowed_tools:
+      - place_order
+      - get_positions
+      - get_account
+    denied_tools:
+      - market_data_fetch
+      - write_report
+      - shell
+      - web_fetch
+    requires_delegation: true
+    file_access:
+      read:
+        - "/output/risk-decisions/*"
+      write:
+        - "/output/trade-logs/*"
+
+trading:
+  order_limits:
+    per_order_max_usd: 2000
+    daily_aggregate_max_usd: 10000
+    per_order_max_shares: 100
+    enforcement: "block_and_log"
+
+  approved_tickers:
+    symbols:
+      - AAPL
+      - MSFT
+      - GOOGL
+      - AMZN
+      - NVDA
+    enforcement: "block_and_log"
+
+  time_restrictions:
+    market_hours_only:
+      enabled: true
+      start: "09:30"
+      end: "16:00"
+      timezone: "America/New_York"
+      enforcement: "block_and_log"
+
+    earnings_blackout:
+      enabled: false
+      window_before_minutes: 30
+      window_after_minutes: 30
+      enforcement: "block_and_log"
+
+  portfolio_limits:
+    max_single_position_pct: 30
+    min_cash_reserve_pct: 10
+    enforcement: "block_and_log"
+
+data_safety:
+  no_pii_in_tool_args:
+    description: "Block tool calls containing PII patterns"
+    patterns:
+      - "\\d{3}-\\d{2}-\\d{4}"
+      - "\\d{16}"
+      - "\\d{9}"
+    enforcement: "block_and_log"
+
+  no_credential_access:
+    description: "Block access to credential files"
+    blocked_paths:
+      - "~/.openclaw/credentials"
+      - "*.env"
+      - "*.key"
+      - "*.pem"
+      - "*.secret"
+    enforcement: "block_and_log"
+
+  no_external_exfiltration:
+    description: "Block outbound data to unauthorized endpoints"
+    allowed_domains:
+      - "paper-api.alpaca.markets"
+      - "data.alpaca.markets"
+    blocked_tools:
+      - web_fetch
+      - curl
+      - wget
+    enforcement: "block_and_log"
+
+delegation:
+  trader_delegation:
+    required: true
+    max_shares_per_delegation: 100
+    max_usd_per_delegation: 2000
+    expiry_minutes: 5
+    must_match_recommendation: true
+    no_sub_delegation: true
+    from_agent: "risk_manager"
+    to_agent: "trader"
+    enforcement: "block_and_log"
