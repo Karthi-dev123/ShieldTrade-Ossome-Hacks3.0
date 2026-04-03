@@ -32,6 +32,7 @@ This branch contains the complete M3 deliverable for the ArmorIQ x OpenClaw hack
 - config/shieldtrade-policies.yaml
 - scripts/policy_engine.py
 - scripts/m3_selftest.py
+- scripts/alpaca_realtime_check.py
 - requirements.txt
 
 ## Installation
@@ -41,6 +42,24 @@ From this branch folder:
 ```bash
 python -m pip install -r requirements.txt
 ```
+
+## Environment Setup
+
+Create a local `.env` file at the branch root and add your keys:
+
+```dotenv
+GROQ_API_KEY=...
+ALPACA_API_KEY=...
+ALPACA_SECRET_KEY=...
+ARMORIQ_API_KEY=...
+GEMINI_API_KEY1=...
+GEMINI_API_KEY2=...
+GEMINI_API_KEY3=...
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+```
+
+Do not commit `.env`.
 
 ## CLI Usage
 
@@ -69,6 +88,13 @@ python scripts/policy_engine.py check-delegation \
 
 ```bash
 python scripts/policy_engine.py validate-all '{"symbol":"AAPL","qty":10,"side":"buy","price":150}' trader
+```
+
+### 5) Real-time Alpaca quote
+
+```bash
+python -m pip install -r requirements.txt
+python scripts/alpaca_realtime_check.py quote AAPL iex
 ```
 
 ## Run M3 Test Suite
