@@ -32,8 +32,11 @@ The core engine capabilities can be run and validated via the consolidated End-t
 
 ### Prerequisites
 
-- Python 3.10+
-- Ensure your environment configuration (`.env`) is placed securely in the repository root prior to execution.
+- **Python 3.10+**
+- **Environment Configuration**: Sensitive credentials and environment policies are strictly decoupled from the codebase.
+  - The runtime requires a `.env` file in the repository root prior to execution.
+  - If supplied with an `env.txt` (e.g., via formal evaluation distribution), please rename it to `.env`.
+  - Alternatively, duplicate the provided `.env.example` file to `.env` and populate the required keys.
 
 ### Running the Engine
 
