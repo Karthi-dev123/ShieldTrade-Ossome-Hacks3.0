@@ -22,7 +22,8 @@ def _run_bridge(*args):
         env=env,
     )
     output = (proc.stdout or proc.stderr).strip()
-    payload = json.loads(output)
+    decoder = json.JSONDecoder()
+    payload, _ = decoder.raw_decode(output)
     return proc.returncode, payload
 
 
