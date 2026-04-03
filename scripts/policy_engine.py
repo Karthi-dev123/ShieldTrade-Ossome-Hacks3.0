@@ -20,6 +20,11 @@ from datetime import datetime, timezone
 
 import yaml
 
+try:
+    from supabase_logger import log as supabase_log
+except Exception:
+    supabase_log = None
+
 POLICY_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "..",
@@ -37,6 +42,20 @@ DAILY_SPEND_FILE = os.path.join(
     "trade-logs",
     "daily-spend.json",
 )
+
+
+def audit_event(event_type, status, details):
+    if supabase_log is None:
+        return None
+    return supabase_log(
+        "audit_log",
+        {
+            "event_type": event_type,
+            "status": status,
+            "details": json.dumps(details, default=str),
+            "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        },
+    )
 
 
 def get_daily_spend():
@@ -244,6 +263,18 @@ def validate_trade(trade, agent_role="trader"):
     results["decision"] = "ALLOW" if results["all_passed"] else "BLOCK"
     results["failed_checks"] = [c["check"] for c in results["checks"] if not c["passed"]]
 
+    audit_event(
+        "policy_trade_validation",
+        "success",
+        {
+            "agent_role": agent_role,
+            "decision": results["decision"],
+            "all_passed": results["all_passed"],
+            "failed_checks": results["failed_checks"],
+            "trade": results["trade"],
+        },
+    )
+
     return results
 
 
@@ -279,11 +310,17 @@ if __name__ == "__main__":
             role = sys.argv[2]
             tool = sys.argv[3]
             result = check_role_permission(role, tool)
+            audit_event("policy_role_check", "success", {"role": role, "tool": tool, "result": result})
 
         elif cmd == "check-delegation":
             delegation_json = json.loads(sys.argv[2])
             request_json = json.loads(sys.argv[3])
             result = check_delegation(delegation_json, request_json)
+            audit_event(
+                "policy_delegation_check",
+                "success",
+                {"delegation": delegation_json, "request": request_json, "result": result},
+            )
 
         elif cmd == "validate-all":
             trade = json.loads(sys.argv[2])
@@ -293,8 +330,11 @@ if __name__ == "__main__":
         else:
             result = {"error": f"Unknown command: {cmd}"}
 
+        audit_event("policy_command", "success", {"command": cmd, "argv": sys.argv[2:], "result": result})
+
         print(json.dumps(result, indent=2))
 
     except Exception as exc:
+        audit_event("policy_command", "error", {"command": cmd, "argv": sys.argv[2:], "error": str(exc)})
         print(json.dumps({"error": str(exc)}))
         sys.exit(1)
