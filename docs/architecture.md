@@ -2,6 +2,13 @@
 
 ## System Overview
 
+### LLM Proxy Layer
+To bypass provider strict rate limits, OpenClaw does not communicate directly with the LLM API. Instead, requests are routed through a local interception layer:
+
+* **Proxy Server:** `scripts/proxy.js` (Express.js server running on port 4000)
+* **Target Model:** `gemini-3-flash-preview`
+* **Function:** Intercepts requests from OpenClaw aimed at the Google GenAI SDK, applies key rotation, and proxies the requests to Google's API to ensure the agent instruction footprint can be processed without rate limit failures.
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    OpenClaw Gateway                      │
