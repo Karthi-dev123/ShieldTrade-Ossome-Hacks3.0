@@ -2,19 +2,20 @@
   "$schema": "https://openclaw.ai/schemas/config/2026.3.json",
   "agents": {
     "defaults": {
-      "model": "groq/llama-3.1-8b-instant"
+      "model": "google/gemini-3-flash-preview"
     }
   },
   "models": {
     "providers": {
-      "groq": {
-        "baseUrl": "https://api.groq.com/openai/v1",
-        "apiKey": "${GROQ_API_KEY}",
+      "google": {
+        "baseUrl": "http://localhost:4000/v1",
+        "apiKey": "proxy-managed",
         "models": [
           {
-            "id": "llama-3.1-8b-instant",
-            "name": "Llama 3.1 8B",
-            "contextWindow": 128000
+            "id": "gemini-3-flash-preview",
+            "name": "Gemini 3 Flash",
+            "api": "openai-responses",
+            "contextWindow": 1000000
           }
         ]
       }
@@ -36,11 +37,11 @@
   },
   "plugins": {
     "allow": [
-      "groq",
+      "google",
       "armoriq"
     ],
     "entries": {
-      "groq": {
+      "google": {
         "enabled": true
       },
       "armoriq": {
