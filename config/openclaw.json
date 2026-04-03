@@ -14,7 +14,7 @@
           {
             "id": "gemini-3-flash-preview",
             "name": "Gemini 3 Flash",
-            "api": "openai-responses",
+            "api": "openai-completions",
             "contextWindow": 1000000
           }
         ]
@@ -31,7 +31,7 @@
   "skills": {
     "load": {
       "extraDirs": [
-        "/home/naithick/hackathons/ossome-hacks/skills"
+        "../skills"
       ]
     }
   },

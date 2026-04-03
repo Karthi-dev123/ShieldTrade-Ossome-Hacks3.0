@@ -9,6 +9,8 @@ import os
 import sys
 from datetime import datetime, timezone
 
+import supabase_logger
+
 
 def _env(key: str) -> str:
     val = os.environ.get(key)
@@ -157,7 +159,7 @@ def cmd_bars(symbol: str, timeframe: str = "1Day", limit: int = 30) -> dict:
     }
 
 
-def cmd_order(symbol: str, qty: int, side: str) -> dict:
+def cmd_order(symbol: str, qty: int, side: str, policy_check_id: str | None = None) -> dict:
     from alpaca.trading.requests import MarketOrderRequest
     from alpaca.trading.enums import OrderSide, TimeInForce
 
@@ -174,7 +176,7 @@ def cmd_order(symbol: str, qty: int, side: str) -> dict:
     )
     order = client.submit_order(req)
 
-    return {
+    result = {
         "order_id": str(order.id),
         "symbol": str(order.symbol),
         "qty": str(order.qty),
@@ -184,6 +186,20 @@ def cmd_order(symbol: str, qty: int, side: str) -> dict:
         "submitted_at": order.submitted_at.isoformat() if order.submitted_at else None,
         "time_in_force": str(order.time_in_force),
     }
+
+    supabase_logger.log("trade_events", {
+        "order_id": result["order_id"],
+        "symbol": result["symbol"],
+        "qty": result["qty"],
+        "side": "buy" if "BUY" in result["side"].upper() else "sell",
+        "order_type": result["type"],
+        "time_in_force": result["time_in_force"],
+        "status": result["status"],
+        "submitted_at": result["submitted_at"],
+        **({"policy_check_id": policy_check_id} if policy_check_id else {}),
+    })
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -232,8 +248,9 @@ def main() -> None:
 
         elif cmd == "order":
             if len(args) < 3:
-                raise ValueError("Usage: order <SYMBOL> <QTY> <SIDE>")
-            result = cmd_order(args[0], int(args[1]), args[2])
+                raise ValueError("Usage: order <SYMBOL> <QTY> <SIDE> [POLICY_CHECK_ID]")
+            policy_check_id = args[3] if len(args) > 3 else None
+            result = cmd_order(args[0], int(args[1]), args[2], policy_check_id)
 
         print(json.dumps(result, indent=2))
 

@@ -16,6 +16,8 @@ from zoneinfo import ZoneInfo
 import yaml
 from filelock import FileLock
 
+import supabase_logger
+
 ROOT = Path(__file__).resolve().parent.parent
 POLICY_PATH = ROOT / "config" / "shieldtrade-policies.yaml"
 DAILY_SPEND_PATH = ROOT / "output" / "trade-logs" / "daily-spend.json"
@@ -290,7 +292,7 @@ def validate_trade(request: dict, policy: dict) -> dict:
     if decision == "ALLOW" and amount > 0:
         _record_spend(amount)
 
-    return {
+    result = {
         "decision": decision,
         "timestamp": _utc_now().isoformat(),
         "agent": agent,
@@ -299,6 +301,20 @@ def validate_trade(request: dict, policy: dict) -> dict:
         "checks": checks,
         "blocked_reasons": [c["detail"] for c in failed] if failed else [],
     }
+
+    row_id = supabase_logger.log("policy_checks", {
+        "decision": result["decision"],
+        "agent": result["agent"],
+        "tool": result["tool"],
+        "ticker": result["ticker"],
+        "checks": result["checks"],
+        "blocked_reasons": result["blocked_reasons"],
+        "timestamp": result["timestamp"],
+    })
+
+    # Expose the audit row id so callers can link trade_events back to this check.
+    result["policy_check_id"] = row_id
+    return result
 
 
 # ---------------------------------------------------------------------------
