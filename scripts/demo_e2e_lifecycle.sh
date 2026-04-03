@@ -3,7 +3,11 @@
 # ShieldTrade E2E Execution Demo
 # Deterministic lifecycle log tracing agents passing intent tokens
 
-set -e
+set -eo pipefail
+
+echo "Setting up dependencies..."
+npm install > /dev/null 2>&1 || true
+python -m pip install -r requirements.txt > /dev/null 2>&1 || true
 
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
