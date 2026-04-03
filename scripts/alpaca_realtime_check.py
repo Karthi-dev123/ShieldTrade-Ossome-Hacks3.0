@@ -33,7 +33,12 @@ def main() -> int:
     if len(sys.argv) < 2:
         return to_output(
             {
-                "error": "Usage: alpaca_realtime_check.py quote <SYMBOL> [iex|sip]",
+                "error": "Usage: alpaca_realtime_check.py quote <SYMBOL|SYMBOL1,SYMBOL2,...> [iex|sip]",
+                "examples": [
+                    "python scripts/alpaca_realtime_check.py quote AAPL",
+                    "python scripts/alpaca_realtime_check.py quote AAPL,MSFT,GOOGL iex",
+                    "python scripts/alpaca_realtime_check.py quote AAPL MSFT GOOGL sip",
+                ]
             },
             1,
         )
@@ -42,29 +47,75 @@ def main() -> int:
     if command != "quote":
         return to_output({"error": f"Unknown command: {command}"}, 1)
 
-    symbol = (sys.argv[2] if len(sys.argv) >= 3 else "AAPL").upper()
-    feed_name = (sys.argv[3] if len(sys.argv) >= 4 else "iex").lower()
+    # Support multiple symbols: comma-separated or space-separated args
+    if len(sys.argv) >= 3:
+        if "," in sys.argv[2]:
+            # Comma-separated: quote "AAPL,MSFT,GOOGL"
+            symbols = [s.strip().upper() for s in sys.argv[2].split(",")]
+        else:
+            # Space-separated: quote AAPL MSFT GOOGL [feed]
+            feed_start_idx = 3
+            symbols = []
+            for i in range(2, len(sys.argv)):
+                arg = sys.argv[i].lower()
+                if arg in ["iex", "sip"]:
+                    feed_start_idx = i
+                    break
+                symbols.append(arg.upper())
+    else:
+        symbols = ["AAPL"]
+
+    feed_name = "iex"
+    for i in range(len(sys.argv) - 1, 1, -1):
+        arg = sys.argv[i].lower()
+        if arg in ["iex", "sip"]:
+            feed_name = arg
+            break
+
     feed = DataFeed.IEX if feed_name == "iex" else DataFeed.SIP
 
     client = StockHistoricalDataClient(api_key=api_key, secret_key=secret_key)
-    request = StockLatestQuoteRequest(symbol_or_symbols=symbol, feed=feed)
+    request = StockLatestQuoteRequest(symbol_or_symbols=symbols, feed=feed)
     quotes = client.get_stock_latest_quote(request)
-    quote = quotes.get(symbol)
 
-    if quote is None:
-        return to_output({"error": f"No quote received for {symbol}"}, 1)
+    if not quotes:
+        return to_output({"error": f"No quotes received for symbols: {symbols}"}, 1)
 
-    return to_output(
-        {
-            "symbol": symbol,
-            "feed": feed_name,
-            "bid_price": float(quote.bid_price),
-            "ask_price": float(quote.ask_price),
-            "bid_size": int(quote.bid_size),
-            "ask_size": int(quote.ask_size),
-            "timestamp": quote.timestamp.isoformat(),
-        }
-    )
+    # If single symbol, return single quote object (backward compatible)
+    if len(symbols) == 1:
+        quote = quotes.get(symbols[0])
+        if quote is None:
+            return to_output({"error": f"No quote received for {symbols[0]}"}, 1)
+        return to_output(
+            {
+                "symbol": symbols[0],
+                "feed": feed_name,
+                "bid_price": float(quote.bid_price),
+                "ask_price": float(quote.ask_price),
+                "bid_size": int(quote.bid_size),
+                "ask_size": int(quote.ask_size),
+                "timestamp": quote.timestamp.isoformat(),
+            }
+        )
+    
+    # Multiple symbols: return array of quotes
+    results = []
+    for symbol in symbols:
+        quote = quotes.get(symbol)
+        if quote is not None:
+            results.append(
+                {
+                    "symbol": symbol,
+                    "feed": feed_name,
+                    "bid_price": float(quote.bid_price),
+                    "ask_price": float(quote.ask_price),
+                    "bid_size": int(quote.bid_size),
+                    "ask_size": int(quote.ask_size),
+                    "timestamp": quote.timestamp.isoformat(),
+                }
+            )
+    
+    return to_output({"quotes": results, "total": len(results), "requested": len(symbols)})
 
 
 if __name__ == "__main__":
