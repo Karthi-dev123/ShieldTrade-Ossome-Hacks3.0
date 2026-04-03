@@ -12,6 +12,7 @@ if %errorlevel%==0 (
     where ollama >nul 2>nul
     if %errorlevel% neq 0 (
         echo Ollama is not installed. Please download and install from https://ollama.com/download to use the local fallback!
+        pause
     ) else (
         echo Ollama is verified to be installed.
     )
