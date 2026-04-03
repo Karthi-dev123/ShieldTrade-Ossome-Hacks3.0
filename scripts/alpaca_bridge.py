@@ -17,6 +17,7 @@ Usage:
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 try:
@@ -51,6 +52,60 @@ if not API_KEY or not SECRET_KEY:
 trade_client = TradingClient(API_KEY, SECRET_KEY, paper=True)
 data_client = StockHistoricalDataClient(API_KEY, SECRET_KEY)
 
+TERMINAL_ORDER_STATUSES = {"filled", "canceled", "expired", "rejected"}
+
+
+def _status_name(value):
+    return str(value).split(".")[-1].lower()
+
+
+def _cancel_conflicting_open_orders(symbol, requested_side):
+    opposite_side = "sell" if requested_side == "buy" else "buy"
+    canceled = []
+
+    try:
+        open_orders = trade_client.get_orders()
+    except Exception:
+        return canceled
+
+    for open_order in open_orders:
+        if str(getattr(open_order, "symbol", "")).upper() != symbol:
+            continue
+
+        status = _status_name(getattr(open_order, "status", ""))
+        if status in TERMINAL_ORDER_STATUSES:
+            continue
+
+        side = _status_name(getattr(open_order, "side", ""))
+        if side != opposite_side:
+            continue
+
+        order_id = str(getattr(open_order, "id", ""))
+        if not order_id:
+            continue
+
+        try:
+            trade_client.cancel_order_by_id(order_id)
+            canceled.append(order_id)
+        except Exception:
+            pass
+
+    return canceled
+
+
+def _wait_for_order_terminal_state(order_id, timeout_seconds=30, poll_seconds=1):
+    deadline = time.time() + timeout_seconds
+    latest = None
+
+    while time.time() < deadline:
+        latest = trade_client.get_order_by_id(order_id)
+        status = _status_name(getattr(latest, "status", ""))
+        if status in TERMINAL_ORDER_STATUSES:
+            return latest, True
+        time.sleep(poll_seconds)
+
+    return latest, False
+
 
 def cmd_account():
     acct = trade_client.get_account()
@@ -67,8 +122,29 @@ def cmd_account():
 
 def cmd_positions():
     positions = trade_client.get_all_positions()
+
+    pending_orders = []
+    try:
+        open_orders = trade_client.get_orders()
+        for order in open_orders:
+            status = _status_name(getattr(order, "status", ""))
+            if status in TERMINAL_ORDER_STATUSES:
+                continue
+            pending_orders.append(
+                {
+                    "order_id": str(order.id),
+                    "symbol": order.symbol,
+                    "qty": str(order.qty),
+                    "side": str(order.side),
+                    "status": str(order.status),
+                    "submitted_at": str(order.submitted_at),
+                }
+            )
+    except Exception:
+        pending_orders = []
+
     if not positions:
-        return {"positions": [], "count": 0}
+        return {"positions": [], "count": 0, "pending_orders": pending_orders, "pending_count": len(pending_orders)}
 
     return {
         "positions": [
@@ -85,6 +161,8 @@ def cmd_positions():
             for p in positions
         ],
         "count": len(positions),
+        "pending_orders": pending_orders,
+        "pending_count": len(pending_orders),
     }
 
 
@@ -164,6 +242,8 @@ def cmd_order(symbol, qty, side):
     if side not in ("buy", "sell"):
         return {"error": f"Invalid side '{side}'. Must be 'buy' or 'sell'."}
 
+    canceled_conflicts = _cancel_conflicting_open_orders(symbol, side)
+
     order_data = MarketOrderRequest(
         symbol=symbol,
         qty=float(qty),
@@ -172,15 +252,22 @@ def cmd_order(symbol, qty, side):
     )
     order = trade_client.submit_order(order_data=order_data)
 
+    final_order, reached_terminal = _wait_for_order_terminal_state(str(order.id))
+    if final_order is None:
+        final_order = order
+
     return {
-        "order_id": str(order.id),
-        "client_order_id": str(order.client_order_id),
-        "symbol": order.symbol,
-        "qty": str(order.qty),
-        "side": str(order.side),
-        "type": str(order.type),
-        "status": str(order.status),
-        "submitted_at": str(order.submitted_at),
+        "order_id": str(final_order.id),
+        "client_order_id": str(final_order.client_order_id),
+        "symbol": final_order.symbol,
+        "qty": str(final_order.qty),
+        "side": str(final_order.side),
+        "type": str(final_order.type),
+        "status": str(final_order.status),
+        "submitted_at": str(final_order.submitted_at),
+        "filled_qty": str(getattr(final_order, "filled_qty", "0")),
+        "reached_terminal_state": reached_terminal,
+        "canceled_conflicting_order_ids": canceled_conflicts,
         "paper": True,
     }
 
