@@ -1,50 +1,51 @@
 # ShieldTrade - Ossome Hacks 3.0 Submission
 
-ShieldTrade is a highly secure multi-agent financial advisory system operating on the OpenClaw framework. It features deterministic declarative policies, AI-driven advisory workflows, and completely secure trading intent execution via ArmorClaw and Alpaca bridges.
+ShieldTrade is a deterministic, highly secure multi-agent financial advisory platform built on the OpenClaw framework. Because this is a **backend/agentic engine submission without a frontend UI**, we have created a single, comprehensive End-to-End (E2E) testing script to easily validate all core capabilities.
 
-## Features at a Glance
-
-- **Multi-Agent Advisory**: Specialized roles (Analyst, Risk Manager, Trader) collaborating seamlessly.
-- **Deterministic Policy Engine**: Highly secure, declarative YAML-based trading limits and rules.
-- **Auditable & Traceable**: Full integration with Postgres via Supabase.
-- **Zero-Trust Trading**: Forced execution constraints with ArmorClaw API intent tokens and robust validations.
+## Architecture Highlights
+- **Multi-Agent Orchestration**: Specialized agents (Analyst, Risk Manager, Trader) collaborating seamlessly to make grounded decisions.
+- **Deterministic Policy Engine**: Highly secure, declarative YAML-based trading limits and validation blockages.
+- **Traceability & Governance**: Fully auditable pipeline with Postgres via Supabase logs.
+- **Zero-Trust Trading Execution**: Forced API execution constraints utilizing ArmorClaw intent tokens and Alpaca bridges.
 
 ---
 
-## 🚀 Quick Start / Evaluation Guide
+## 🚀 E2E Evaluation Guide
 
-We have consolidated the entire pipeline into a single execution step to evaluate the complete platform lifecycle cleanly and gracefully. All necessary `.env` files with credentials will be provided directly and must be placed in the repository root.
+We have consolidated the entire complex backend pipeline into a **single execution step**. This script spins up the proxy, validates the agent logic sequentially, runs the defensive trade policy checks natively, handles APIs, and gracefully reports all outputs.
 
-### Evaluation Requirements
-- A valid `.env` file at the root of the project (provided directly by our team).
+### Prerequisites
+
+All sensitive configurations have been decoupled. **Please copy the `.env` file provided privately into the root of this repository before running.**
+
 - Python 3.10+
-- Bash environment (Git Bash or WSL for Windows users)
+- The `.env` file (provided directly) placed in the repository root.
 
-> **Note on AI API Fallbacks**: Due to API rate limits during testing, our proxy system routes logic automatically. If all primary keys fail, the execution will gracefully fall back or you can configure `USE_OLLAMA=true` to route via a local Ollama instance seamlessly.
+### Running the End-to-End Test
 
-### 2. Run the Demo
+Depending on your OS, simply run the appropriate script below.
 
-Simply execute the evaluation script from the root directory.
-
-**For Linux / Mac:**
+**For Mac / Linux / WSL / Git Bash:**
 ```bash
 ./run_shieldtrade.sh
 ```
 
-**For Windows:**
-Simply double-click the `run_shieldtrade.bat` file, or run it via terminal:
+**For Native Windows (CMD/PowerShell):**
 ```cmd
 run_shieldtrade.bat
 ```
 
-**What this evaluation script does automatically:**
-1. Loads the provided `.env` credentials securely.
-2. Simulates an end-to-end trade validation and decision lifecycle entirely locally.
-3. Triggers the policy guardrails proactively to prove our defensive execution checks work.
-4. Generates an intent signature securely, validates it, and traces the outcome.
-5. Emits a clean, traceable output to the terminal.
+*Note on Resilience: Generative AI API keys (like Gemini) often suffer from aggressive rate limiting. To prevent evaluation failures, our backend proxy will gracefully rotate through API keys automatically, and can fall back to Ollama if locally configured.*
 
 ---
 
-## Technical Cleanliness Guarantee
-This repository has been fully sanitized for grading. To eliminate noise, all internal documentation, logs (`output/`, `data/`), test caching (`__pycache__`), API keys, and environment files have been permanently stripped from this codebase. The repository contains only the exact executable logic needed to grade the solution.
+## What the Script Does (The Flow)
+
+If you follow the execution terminal output, you will see it natively step through:
+1. **Network & Credential Check**: Securely parsing the `.env` and booting local failovers.
+2. **Analysis Phase**: The Analyst agent fetching data to justify a market move.
+3. **Risk Enforcement**: The Risk Manager agent reviewing the decision against strict YAML rules (ensuring no unauthorized pairs, size limits, or timezone bounds are breached).
+4. **Trader Intent Generation**: Generating the final API signature via Armoriq for execution.
+5. **Gateway Auditing**: Finally logging the resulting verified transaction state cleanly into Supabase.
+
+*This repository is entirely sanitized for judging—stripped of bloat, temp caches (`__pycache__`), API keys, and test packages.*
