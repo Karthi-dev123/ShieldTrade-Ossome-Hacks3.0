@@ -18,5 +18,5 @@ if %errorlevel%==0 (
     )
 )
 
-bash scripts/demo_e2e_lifecycle.sh
+python scripts/start-all.py
 pause

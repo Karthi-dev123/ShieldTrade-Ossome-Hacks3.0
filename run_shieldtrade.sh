@@ -16,4 +16,4 @@ if grep -q "USE_OLLAMA=true" .env; then
     fi
 fi
 
-bash scripts/demo_e2e_lifecycle.sh
+python scripts/start-all.py

@@ -28,7 +28,9 @@ graph TD
 
 ## 🚀 System Execution
 
-The core engine capabilities can be run and validated via the consolidated End-to-End (E2E) execution script. This script boots the proxy, sequentially routes agent logic, enforces declarative policies, securely handles APIs, and verifies terminal outputs.
+*Note: Currently, the entire ShieldTrade ecosystem operates flawlessly in the terminal hitting real, live APIs (Alpaca, Supabase, Gemini/Ollama, OpenClaw). We bypassed simulated mocks for this submission to demonstrate the true cryptographic bridge logic. A comprehensive web dashboard and UI frontend is on our immediate future roadmap.*
+
+The core engine capabilities can be run and validated via the consolidated End-to-End (E2E) execution script. This script boots the proxy, sequentially routes agent logic, enforces declarative policies, securely handles APIs, and persists terminal outputs.
 
 ### Prerequisites
 
