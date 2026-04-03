@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 import yaml
 from filelock import FileLock
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import supabase_logger
 
 ROOT = Path(__file__).resolve().parent.parent
