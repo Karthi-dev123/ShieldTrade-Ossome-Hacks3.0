@@ -40,12 +40,46 @@ This branch contains the complete M3 deliverable for the ArmorIQ x OpenClaw hack
 From this branch folder:
 
 ```bash
+# ShieldTrade — M3 Phase (Policy & Enforcement)
+
+This branch contains the complete M3 deliverable for the hackathon policy layer and Phase 3 integration checks.
+
+## Branch Scope
+
+- Phase owner: M3 (Policy & Enforcement)
+- Branch: feature/policy-engine
+- Goal: deterministic policy checks, audit logging, and blocked-path validation
+
+## Repository Structure (M3)
+
+```text
+config/
+	shieldtrade-policies.yaml
+scripts/
+	policy_engine.py
+	m3_selftest.py
+	alpaca_realtime_check.py
+	gateway_validation.py
+	supabase_logger.py
+tests/
+	test_policy_engine.py
+output/
+	reports/
+		gateway-validation.json
+	risk-decisions/
+	trade-logs/
+requirements.txt
+```
+
+## Installation
+
+```bash
 python -m pip install -r requirements.txt
 ```
 
 ## Environment Setup
 
-Create a local `.env` file at the branch root and add your keys:
+Create `.env` in repository root:
 
 ```dotenv
 GROQ_API_KEY=...
@@ -57,47 +91,57 @@ GEMINI_API_KEY2=...
 GEMINI_API_KEY3=...
 SUPABASE_URL=...
 SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_KEY=...
+ANTHROPIC_API_KEY=...
 ```
 
-Do not commit `.env`.
-
-## CLI Usage
-
-### 1) Validate a trade
+## Policy Engine Commands
 
 ```bash
 python scripts/policy_engine.py check-trade '{"symbol":"AAPL","qty":10,"side":"buy","price":150}' trader
-```
-
-### 2) Check role permission
-
-```bash
 python scripts/policy_engine.py check-role analyst place_order
 python scripts/policy_engine.py check-role trader place_order
-```
-
-### 3) Check delegation constraints
-
-```bash
-python scripts/policy_engine.py check-delegation \
-  '{"status":"APPROVED","to_agent":"trader","approved_action":{"symbol":"AAPL","max_quantity":10},"expires_at":"2099-12-31T23:59:59Z"}' \
-  '{"symbol":"AAPL","qty":10}'
-```
-
-### 4) Full policy validation
-
-```bash
+python scripts/policy_engine.py check-delegation '{"status":"APPROVED","to_agent":"trader","approved_action":{"symbol":"AAPL","max_quantity":10},"expires_at":"2099-12-31T23:59:59Z"}' '{"symbol":"AAPL","qty":10}'
 python scripts/policy_engine.py validate-all '{"symbol":"AAPL","qty":10,"side":"buy","price":150}' trader
 ```
 
-### 5) Real-time Alpaca quote
+## Supabase Audit DB Integration
+
+- `scripts/policy_engine.py` writes audit events to Supabase table `audit_log`.
+- `scripts/supabase_logger.py` is a non-blocking helper used by policy command paths.
+- Logging failure does not block policy enforcement decisions.
+
+## Policy Testing
+
+Run policy tests:
 
 ```bash
-python -m pip install -r requirements.txt
-python scripts/alpaca_realtime_check.py quote AAPL iex
+python -m pytest tests -q
 ```
 
-## Run M3 Test Suite
+Included coverage:
+- blocked `check_share_count` scenario (`qty` over limit)
+- boundary `check_share_count` scenario (`qty` at limit)
+
+## Gateway Validation (Phase 3)
+
+Run blocked-path validation:
+
+```bash
+python scripts/gateway_validation.py
+```
+
+This executes 4 blocked CLI scenarios:
+- unapproved ticker
+- over order-size limit
+- over share-count limit
+- PII payload
+
+Validation output:
+- `output/reports/gateway-validation.json`
+- includes `alpaca_drop_confirmed` evidence
+
+## M3 Self-Test
 
 ```bash
 python scripts/m3_selftest.py
@@ -109,18 +153,7 @@ Expected final line:
 ALL_PASS=True
 ```
 
-## Enforcement Outcomes
+## Security
 
-- ALLOW only when all checks pass
-- BLOCK when any check fails
-- Structured JSON output includes:
-  - decision (ALLOW/BLOCK)
-  - all_passed
-  - failed_checks
-  - per-check pass/fail details
-
-## Notes
-
-- The market-hours check depends on timezone data.
-- requirements.txt includes tzdata for Windows/Python environments where IANA timezone data is missing.
-- This branch is intentionally isolated to M3 scope and does not include M1/M2/M4 integration work.
+- Never commit `.env`.
+- Rotate any key that has been exposed in logs or chat.
