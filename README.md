@@ -28,7 +28,7 @@ graph TD
 
 ## 🚀 System Execution
 
-*Note: Currently, the entire ShieldTrade ecosystem operates flawlessly in the terminal hitting real, live APIs (Alpaca, Supabase, Gemini/Ollama, OpenClaw). We bypassed simulated mocks for this submission to demonstrate the true cryptographic bridge logic. A comprehensive web dashboard and UI frontend is on our immediate future roadmap.*
+*Note: The execution scripts trigger the real API gateway directly (OpenClaw, Alpaca, Supabase) rather than using mocked responses. We focused entirely on the backend agent structure and cryptographic bridge logic for this hackathon; a web UI will be added in future work.*
 
 The core engine capabilities can be run and validated via the consolidated End-to-End (E2E) execution script. This script boots the proxy, sequentially routes agent logic, enforces declarative policies, securely handles APIs, and persists terminal outputs.
 
