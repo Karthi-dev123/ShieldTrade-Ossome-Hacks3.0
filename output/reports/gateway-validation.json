@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-04-03T12:37:09.754632Z",
+  "all_passed": true,
+  "scenarios": [
+    {
+      "scenario": "blocked_unapproved_ticker",
+      "exit_code": 0,
+      "blocked": true,
+      "expected_failed_check": "ticker_approved",
+      "failed_checks": [
+        "ticker_approved",
+        "market_hours"
+      ],
+      "pass": true
+    },
+    {
+      "scenario": "blocked_order_size",
+      "exit_code": 0,
+      "blocked": true,
+      "expected_failed_check": "order_size_limit",
+      "failed_checks": [
+        "order_size_limit",
+        "market_hours"
+      ],
+      "pass": true
+    },
+    {
+      "scenario": "blocked_share_count",
+      "exit_code": 0,
+      "blocked": true,
+      "expected_failed_check": "share_count_limit",
+      "failed_checks": [
+        "share_count_limit",
+        "market_hours"
+      ],
+      "pass": true
+    },
+    {
+      "scenario": "blocked_pii_payload",
+      "exit_code": 0,
+      "blocked": true,
+      "expected_failed_check": "data_safety_pii",
+      "failed_checks": [
+        "market_hours",
+        "data_safety_pii"
+      ],
+      "pass": true
+    }
+  ],
+  "alpaca_orders_before": 1,
+  "alpaca_orders_after": 1,
+  "alpaca_drop_confirmed": true
+}
