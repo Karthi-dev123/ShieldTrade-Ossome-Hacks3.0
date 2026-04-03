@@ -10,6 +10,9 @@ Current completed modules in this repo:
 ```text
 scripts/
 	alpaca_bridge.py
+	supabase_logger.py
+tests/
+	test_m2_policy_guards.py
 output/
 	reports/
 	risk-decisions/
@@ -31,6 +34,15 @@ python -m pip install -r requirements.txt
 ```
 
 Create `.env` from `.env.example` and set your real keys.
+
+Expected `.env` keys for this branch:
+
+```dotenv
+ALPACA_API_KEY=...
+ALPACA_SECRET_KEY=...
+SUPABASE_URL=...
+SUPABASE_SERVICE_KEY=...
+```
 
 ## M2: Alpaca Bridge
 
@@ -66,6 +78,25 @@ Notes:
 - The bridge returns JSON for both success and error responses.
 - `positions` includes pending open orders to make order state visible before fills.
 - `order` handles conflicting opposite open orders for the same symbol.
+
+## Supabase Audit Logging
+
+- Audit events are written via `scripts/supabase_logger.py`.
+- `scripts/alpaca_bridge.py` logs command success and error payloads to table `audit_log`.
+- Logging is non-blocking: if Supabase is unavailable, trading commands continue to work.
+
+## M2 Policy Guard Tests
+
+This branch includes policy-style guardrail tests for M2 command behavior:
+
+```bash
+python -m pytest tests/test_m2_policy_guards.py -q
+```
+
+Covered scenarios:
+- Invalid order side is blocked.
+- Missing order arguments are rejected.
+- Unknown command is rejected.
 
 ## Security
 
