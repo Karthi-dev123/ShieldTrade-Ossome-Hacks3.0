@@ -35,6 +35,11 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
 
+try:
+    from supabase_logger import log as supabase_log
+except Exception:
+    supabase_log = None
+
 
 API_KEY = os.environ.get("ALPACA_API_KEY")
 SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY")
@@ -53,6 +58,21 @@ trade_client = TradingClient(API_KEY, SECRET_KEY, paper=True)
 data_client = StockHistoricalDataClient(API_KEY, SECRET_KEY)
 
 TERMINAL_ORDER_STATUSES = {"filled", "canceled", "expired", "rejected"}
+
+
+def _audit(command, status, details):
+    if supabase_log is None:
+        return None
+    return supabase_log(
+        "audit_log",
+        {
+            "event_type": "alpaca_bridge",
+            "command": command,
+            "status": status,
+            "details": json.dumps(details, default=str),
+            "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        },
+    )
 
 
 def _status_name(value):
@@ -326,8 +346,10 @@ if __name__ == "__main__":
 
     try:
         result = func(*args)
+        _audit(command, "success", {"args": args, "result": result})
         print(json.dumps(result, indent=2))
     except Exception as exc:
+        _audit(command, "error", {"args": args, "error": str(exc)})
         print(
             json.dumps(
                 {
