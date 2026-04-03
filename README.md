@@ -1,86 +1,25 @@
-# ShieldTrade — M3 Phase (Policy & Enforcement)
+# ShieldTrade
 
-This branch contains the complete M3 deliverable for the ArmorIQ x OpenClaw hackathon: a declarative policy model and a deterministic enforcement engine for trade validation.
+ShieldTrade is a multi-agent financial advisory system operating on the OpenClaw framework, with declarative policies and deterministic intent execution via ArmorClaw.
 
-## Branch Scope
+## Architecture & Branches
 
-- Phase owner: M3 (Policy & Enforcement)
-- Branch: feature/policy-engine
-- Purpose: enforce financial constraints in code, not prompt instructions
+This branch serves as the finalized integration for the multi-agent trading backend, combining policy enforcement, Alpaca bridges, Supabase audit logs, and gateway tools into a single source of truth. 
 
-## What Is Implemented
+**Strict Isolation:**
+- Node.js logic runs the local proxy and gateway.
+- Python code operates within `scripts/` and `tests/` exclusively.
 
-1. Declarative policy model in YAML
-	- Defines agent role permissions
-	- Defines trading constraints (ticker, size, daily cap, market hours)
-	- Defines data safety constraints (PII, credential access, exfiltration)
-	- Defines delegation constraints (approval, expiry, quantity/symbol match)
+## Setup
 
-2. Policy enforcement engine in Python
-	- Loads YAML policy at runtime
-	- Evaluates trade requests and returns structured PASS/FAIL checks
-	- Evaluates role-tool permission checks
-	- Evaluates delegation token checks
-	- Supports CLI commands required by the team guide
-
-3. M3 validation suite
-	- Includes a self-test script for all required test scenarios
-	- Verifies positive and negative cases for trade, role, and delegation checks
-
-## Files Added for M3
-
-- config/shieldtrade-policies.yaml
-- scripts/policy_engine.py
-- scripts/m3_selftest.py
-- scripts/alpaca_realtime_check.py
-- requirements.txt
-
-## Installation
-
-From this branch folder:
-
-```bash
-# ShieldTrade — M3 Phase (Policy & Enforcement)
-
-This branch contains the complete M3 deliverable for the hackathon policy layer and Phase 3 integration checks.
-
-## Branch Scope
-
-- Phase owner: M3 (Policy & Enforcement)
-- Branch: feature/policy-engine
-- Goal: deterministic policy checks, audit logging, and blocked-path validation
-
-## Repository Structure (M3)
-
-```text
-config/
-	shieldtrade-policies.yaml
-scripts/
-	policy_engine.py
-	m3_selftest.py
-	alpaca_realtime_check.py
-	gateway_validation.py
-	supabase_logger.py
-tests/
-	test_policy_engine.py
-output/
-	reports/
-		gateway-validation.json
-	risk-decisions/
-	trade-logs/
-requirements.txt
-```
-
-## Installation
-
+1. **Initialize Requirements:**
 ```bash
 python -m pip install -r requirements.txt
+npm install
 ```
 
-## Environment Setup
-
-Create `.env` in repository root:
-
+2. **Environment Variables:**
+Create `.env` at the repository root:
 ```dotenv
 GROQ_API_KEY=...
 ALPACA_API_KEY=...
@@ -93,67 +32,36 @@ SUPABASE_URL=...
 SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_KEY=...
 ANTHROPIC_API_KEY=...
+USE_OLLAMA=false
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_API_KEY=...
 ```
 
-## Policy Engine Commands
+Never commit `.env`.
+
+## Services
+
+### Local LLM Rate-Limit Proxy
+To avoid LLM API rate limits when managing intensive agent routines:
+```bash
+node scripts/proxy.js
+```
+The proxy runs on port 4000. It features an integrated failover API logic. 
+If `USE_OLLAMA=true` is set, the proxy automatically routes standard agent operations to a local Ollama instance (defaulting to `http://localhost:11434`) using `OLLAMA_API_KEY` for seamless offline/unmetered testing. 
+
+### Policy Engine Enforcement
+Executables reside in `scripts/policy_engine.py` for evaluating trade constraints. Timezone validation strictly adheres to `America/New_York`.
 
 ```bash
 python scripts/policy_engine.py check-trade '{"symbol":"AAPL","qty":10,"side":"buy","price":150}' trader
-python scripts/policy_engine.py check-role analyst place_order
-python scripts/policy_engine.py check-role trader place_order
-python scripts/policy_engine.py check-delegation '{"status":"APPROVED","to_agent":"trader","approved_action":{"symbol":"AAPL","max_quantity":10},"expires_at":"2099-12-31T23:59:59Z"}' '{"symbol":"AAPL","qty":10}'
-python scripts/policy_engine.py validate-all '{"symbol":"AAPL","qty":10,"side":"buy","price":150}' trader
 ```
 
-## Supabase Audit DB Integration
-
-- `scripts/policy_engine.py` writes audit events to Supabase table `audit_log`.
-- `scripts/supabase_logger.py` is a non-blocking helper used by policy command paths.
-- Logging failure does not block policy enforcement decisions.
-
-## Policy Testing
-
-Run policy tests:
+## Validation & Testing
 
 ```bash
-python -m pytest tests -q
+python -m pytest tests/ -q
 ```
 
-Included coverage:
-- blocked `check_share_count` scenario (`qty` over limit)
-- boundary `check_share_count` scenario (`qty` at limit)
-
-## Gateway Validation (Phase 3)
-
-Run blocked-path validation:
-
-```bash
-python scripts/gateway_validation.py
-```
-
-This executes 4 blocked CLI scenarios:
-- unapproved ticker
-- over order-size limit
-- over share-count limit
-- PII payload
-
-Validation output:
-- `output/reports/gateway-validation.json`
-- includes `alpaca_drop_confirmed` evidence
-
-## M3 Self-Test
-
-```bash
-python scripts/m3_selftest.py
-```
-
-Expected final line:
-
-```text
-ALL_PASS=True
-```
-
-## Security
-
-- Never commit `.env`.
-- Rotate any key that has been exposed in logs or chat.
+Output constraints:
+- `output/reports/gateway-validation.json` holds evidence of dropped intents.
+- Audit integrations pipe deterministically to `audit_log` via Supabase implementations.

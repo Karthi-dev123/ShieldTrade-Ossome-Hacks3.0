@@ -19,23 +19,68 @@ app.use((req, res, next) => {
 
 app.use(async (req, res) => {
   try {
+    const useOllama = process.env.USE_OLLAMA === 'true';
+    const model = req.body.model || 'gemini-3-flash-preview';
+    const messages = req.body.messages || [];
+    
+    // Normalize content for both APIs
+    const contents = messages.map(m => {
+      const text = Array.isArray(m.content)
+        ? m.content.filter(b => b.type === 'text').map(b => b.text).join(' ')
+        : (m.content || '');
+      return `${m.role}: ${text}`;
+    }).join('\n');
+
+    if (useOllama) {
+      const ollamaUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+      const ollamaKey = process.env.OLLAMA_API_KEY || '';
+      console.log(`[Proxy] Using Ollama at ${ollamaUrl}`);
+      
+      const payload = {
+        model: model,
+        messages: [{ role: 'user', content: contents }],
+        stream: !!req.body.stream
+      };
+
+      const response = await fetch(`${ollamaUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(ollamaKey && { 'Authorization': `Bearer ${ollamaKey}` })
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama Error: ${response.statusText}`);
+      }
+
+      if (req.body.stream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        
+        const reader = response.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+        res.end();
+      } else {
+        const data = await response.json();
+        res.json(data);
+      }
+      return;
+    }
+
+    // Default to Gemini Rotation
     const key = keys[keyIndex];
     keyIndex = (keyIndex + 1) % keys.length;
     
     if (!key) throw new Error("No Gemini API keys found in environment.");
 
     const ai = new GoogleGenAI({ apiKey: key });
-    
-    const messages = req.body.messages || [];
-    const contents = messages.map(m => {
-      // content can be a plain string OR an array of content blocks
-      const text = Array.isArray(m.content)
-        ? m.content.filter(b => b.type === 'text').map(b => b.text).join(' ')
-        : (m.content || '');
-      return `${m.role}: ${text}`;
-    }).join('\n');
-    const model = req.body.model || 'gemini-3-flash-preview';
-
     console.log(`[Proxy] Using key ${keyIndex} for model ${model}`);
 
     const response = await ai.models.generateContent({
@@ -46,7 +91,6 @@ app.use(async (req, res) => {
     const text = response.text || '';
 
     if (req.body.stream) {
-      // Return SSE (Server-Sent Events) format for streaming requests
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
@@ -59,7 +103,6 @@ app.use(async (req, res) => {
         choices: [{ index: 0, delta, finish_reason: null }],
       });
 
-      // Send role first, then full text as one chunk, then done
       res.write(`data: ${chunk({ role: 'assistant', content: '' })}\n\n`);
       res.write(`data: ${chunk({ content: text })}\n\n`);
       res.write(`data: ${JSON.stringify({
