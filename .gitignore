@@ -1,24 +1,95 @@
+# ─── Dependencies ────────────────────────────────────────
 node_modules/
-dist/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# ─── Environment & Secrets ───────────────────────────────
 .env
+env.txt
+*.key
+*.pem
+*.secret
+
+# ─── Build Artifacts ─────────────────────────────────────
+dist/
+.build/
+*.egg-info/
+
+# ─── OpenClaw / Agent Workspace ──────────────────────────
+.openclaw/
+.pytest_cache/
+ollama_bin
+
+# ─── Logs ────────────────────────────────────────────────
+*.log
+nohup.out
+
+# ─── Output (runtime-generated, keep directory structure) ─
 output/reports/*
 output/risk-decisions/*
 output/trade-logs/*
 output/thoughts/*
+output/gateway.log
+output/proxy.log
 !output/**/.gitkeep
-*.log
-.openclaw/
-__pycache__/
-venv/
-*.pyc
-.DS_Store
-.backups/
+
+# ─── Temporary & Debug Files ─────────────────────────────
+out.txt
+out2.txt
+out2_final.txt
+out3.txt
+output.txt
+terminal.txt
+terminal_output.txt
+completion_check.txt
+demo_run.txt
+demo_output_final.log
+run_result_bg.txt
+final_15min.txt
+run_final_15min_demo.txt
+
+# ─── Throwaway Scripts & Patches ─────────────────────────
+patch_json.py
+patch_revert.py
+configure_ollama.py
+configure_llama32.py
+run_real_trade_test.py
+fix_env.sh
+fix_openclaw.sh
+install_ollama.sh
+run_bg.sh
+run_bg2.sh
+run_daemon.sh
+run_det.sh
+run_final.sh
+run_gw.sh
+run_reboot.sh
+start_gateway.sh
+test.js
+test-gemini.js
+
+# ─── Config Backups & Clobbered Files ────────────────────
+config/*.bak
+config/*.bak.*
 *.clobbered.*
-node_modules/
-.env
-__pycache__/
-venv/
-.build/
-docs/
+
+# ─── Internal Brainstorming Docs ─────────────────────────
 project-docs/
-tests/
+
+# ─── Agent Persona Files (not source code) ───────────────
+AGENTS.md
+SOUL.md
+USER.md
+TOOLS.md
+IDENTITY.md
+HEARTBEAT.md
+
+# ─── OS Artifacts ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── IDE ─────────────────────────────────────────────────
+.vscode/
+.idea/

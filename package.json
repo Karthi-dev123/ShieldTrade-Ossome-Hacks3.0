@@ -1,20 +1,16 @@
 {
-  "name": "ossome-hacks",
+  "name": "shieldtrade",
   "version": "1.0.0",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "Secure multi-agent trading platform — LLM proxy and OpenClaw gateway",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "proxy": "node scripts/proxy.js",
+    "test": "echo \"See: pytest tests/ -v\" && exit 0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["multi-agent", "trading", "armoriq", "openclaw"],
+  "author": "Team Avengers",
+  "license": "MIT",
   "dependencies": {
-    "@google/genai": "^1.48.0",
-    "dotenv": "^17.4.0",
     "express": "^5.2.1"
   }
 }

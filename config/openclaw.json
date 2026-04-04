@@ -6,7 +6,8 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "ollama/tinyllama:latest"
+        "primary": "ollama/llama3.2:1b",
+        "fallback": "ollama/llama3.2:1b"
       },
       "models": {
         "ollama/tinyllama:latest": {}
