@@ -1,0 +1,168 @@
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+██░▄▄▄░██░▄▄░██░▄▄▄██░▀██░██░▄▄▀██░████░▄▄▀██░███░██
+██░███░██░▀▀░██░▄▄▄██░█░█░██░█████░████░▀▀░██░█░█░██
+██░▀▀▀░██░█████░▀▀▀██░██▄░██░▀▀▄██░▀▀░█░██░██▄▀▄▀▄██
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+                  🦞 OPENCLAW 🦞                    
+ 
+┌  OpenClaw doctor
+│
+◇  Startup optimization ─────────────────────────────────────────────────╮
+│                                                                        │
+│  - NODE_COMPILE_CACHE is not set; repeated CLI runs can be slower on   │
+│    small hosts (Pi/VM).                                                │
+│  - OPENCLAW_NO_RESPAWN is not set to 1; set it to avoid extra startup  │
+│    overhead from self-respawn.                                         │
+│  - Suggested env for low-power hosts:                                  │
+│    export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache           │
+│    mkdir -p /var/tmp/openclaw-compile-cache                            │
+│    export OPENCLAW_NO_RESPAWN=1                                        │
+│                                                                        │
+├────────────────────────────────────────────────────────────────────────╯
+│
+◇  Config ───────────────────────────────────────────────────╮
+│                                                            │
+│  Config invalid; doctor will run with best-effort config.  │
+│                                                            │
+├────────────────────────────────────────────────────────────╯
+│
+◇  Gateway runtime ────────────────────────────────────────────────╮
+│                                                                  │
+│  System Node 22 LTS (22.14+) or Node 24 not found. Install via   │
+│  Homebrew/apt/choco and rerun doctor to migrate off Bun/version  │
+│  managers.                                                       │
+│                                                                  │
+├──────────────────────────────────────────────────────────────────╯
+│
+◇  Gateway service config ─────────────────────────────────────────────────╮
+│                                                                          │
+│  - Gateway service PATH includes version managers or package managers;   │
+│    recommend a minimal PATH.                                             │
+│    (/home/naithick/.nvm/versions/node/v25.3.0/bin)                       │
+│  - Gateway service uses Node from a version manager; it can break after  │
+│    upgrades. (/home/naithick/.nvm/versions/node/v25.3.0/bin/node)        │
+│  - System Node 22 LTS (22.14+) or Node 24 not found; install it before   │
+│    migrating away from version managers.                                 │
+│                                                                          │
+├──────────────────────────────────────────────────────────────────────────╯
+
+Installed systemd service: /home/naithick/.config/systemd/user/openclaw-gateway.service
+Previous unit backed up to: /home/naithick/.config/systemd/user/openclaw-gateway.service.bak
+│
+◇  Security ─────────────────────────────────╮
+│                                            │
+│  - No channel security warnings detected.  │
+│  - Run: openclaw security audit --deep     │
+│                                            │
+├────────────────────────────────────────────╯
+│
+◇  Skills status ────────────╮
+│                            │
+│  Eligible: 17              │
+│  Missing requirements: 46  │
+│  Blocked by allowlist: 0   │
+│                            │
+├────────────────────────────╯
+[35m[plugins][39m [31marmoriq invalid config: <root>: must NOT have additional properties[39m
+│
+◇  Plugins ──────╮
+│                │
+│  Loaded: 37    │
+│  Disabled: 45  │
+│  Errors: 1     │
+│  - armoriq     │
+│                │
+├────────────────╯
+│
+◇  Plugin diagnostics ────────────────────────────────────────────────╮
+│                                                                     │
+│  - ERROR armoriq: invalid config: <root>: must NOT have additional  │
+│    properties                                                       │
+│    (/home/naithick/.openclaw/extensions/armorclaw/dist/index.js)    │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────╯
+│
+◇  Gateway ──────────────╮
+│                        │
+│  Gateway not running.  │
+│                        │
+├────────────────────────╯
+│
+◇  Gateway connection ──────────────────────────────────────────────────╮
+│                                                                       │
+│  Gateway target: ws://127.0.0.1:18789                                 │
+│  Source: local loopback                                               │
+│  Config: /home/naithick/hackathons/ossome-hacks/config/openclaw.json  │
+│  Bind: loopback                                                       │
+│                                                                       │
+├───────────────────────────────────────────────────────────────────────╯
+│
+◇  Gateway ───────────────────────────────────────────────────────────────╮
+│                                                                         │
+│  Runtime: running (pid 134007, state active, sub running, last exit 0,  │
+│  reason 0)                                                              │
+│                                                                         │
+├─────────────────────────────────────────────────────────────────────────╯
+Restarted systemd service: openclaw-gateway.service
+│
+◇  Gateway ──────────────╮
+│                        │
+│  Gateway not running.  │
+│                        │
+├────────────────────────╯
+│
+◇  Gateway connection ──────────────────────────────────────────────────╮
+│                                                                       │
+│  Gateway target: ws://127.0.0.1:18789                                 │
+│  Source: local loopback                                               │
+│  Config: /home/naithick/hackathons/ossome-hacks/config/openclaw.json  │
+│  Bind: loopback                                                       │
+│                                                                       │
+├───────────────────────────────────────────────────────────────────────╯
+Invalid config:
+- plugins.entries.armoriq.config: invalid config: must NOT have additional properties
+│
+└  Doctor complete.
+
+Invalid config at /home/naithick/hackathons/ossome-hacks/config/openclaw.json:\n- plugins.entries.armoriq.config: invalid config: must NOT have additional properties
+
+🦞 OpenClaw 2026.3.28 (f9b1079) — The lobster in your shell. 🦞
+
+Usage: openclaw gateway run [options]
+
+Run the WebSocket Gateway (foreground)
+
+Options:
+  --allow-unconfigured       Allow gateway start without gateway.mode=local in
+                             config (default: false)
+  --auth <mode>              Gateway auth mode
+                             ("none"|"token"|"password"|"trusted-proxy")
+  --bind <mode>              Bind mode
+                             ("loopback"|"lan"|"tailnet"|"auto"|"custom").
+                             Defaults to config gateway.bind (or loopback).
+  --claude-cli-logs          Deprecated alias for --cli-backend-logs (default:
+                             false)
+  --cli-backend-logs         Only show CLI backend logs in the console (includes
+                             stdout/stderr) (default: false)
+  --compact                  Alias for "--ws-log compact" (default: false)
+  --dev                      Create a dev config + workspace if missing (no
+                             BOOTSTRAP.md) (default: false)
+  --force                    Kill any existing listener on the target port
+                             before starting (default: false)
+  -h, --help                 Display help for command
+  --password <password>      Password for auth mode=password
+  --password-file <path>     Read gateway password from file
+  --port <port>              Port for the gateway WebSocket
+  --raw-stream               Log raw model stream events to jsonl (default:
+                             false)
+  --raw-stream-path <path>   Raw stream jsonl path
+  --reset                    Reset dev config + credentials + sessions +
+                             workspace (requires --dev) (default: false)
+  --tailscale <mode>         Tailscale exposure mode ("off"|"serve"|"funnel")
+  --tailscale-reset-on-exit  Reset Tailscale serve/funnel configuration on
+                             shutdown (default: false)
+  --token <token>            Shared token required in connect.params.auth.token
+                             (default: OPENCLAW_GATEWAY_TOKEN env if set)
+  --verbose                  Verbose logging to stdout/stderr (default: false)
+  --ws-log <style>           WebSocket log style ("auto"|"full"|"compact")
+                             (default: "auto")

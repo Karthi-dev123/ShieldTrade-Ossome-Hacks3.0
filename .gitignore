@@ -21,3 +21,4 @@ venv/
 .build/
 docs/
 project-docs/
+tests/

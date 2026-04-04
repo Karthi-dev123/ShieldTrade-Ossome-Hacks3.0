@@ -1,51 +1,83 @@
 {
-  "$schema": "https://openclaw.ai/schemas/config/2026.3.json",
+  "meta": {
+    "lastTouchedVersion": "2026.3.28",
+    "lastTouchedAt": "2026-04-04T07:49:01.179Z"
+  },
   "agents": {
     "defaults": {
-      "model": "google/gemini-3-flash-preview"
-    }
-  },
-  "models": {
-    "providers": {
-      "google": {
-        "baseUrl": "http://localhost:4000/v1",
-        "apiKey": "proxy-managed",
-        "models": [
-          {
-            "id": "gemini-3-flash-preview",
-            "name": "Gemini 3 Flash",
-            "api": "openai-completions",
-            "contextWindow": 1000000
-          }
-        ]
+      "model": {
+        "primary": "ollama/tinyllama:latest"
+      },
+      "models": {
+        "ollama/tinyllama:latest": {}
+      },
+      "workspace": "/home/naithick/hackathons/ossome-hacks"
+    },
+    "list": [
+      {
+        "id": "main"
+      },
+      {
+        "id": "shieldtrade-analyst",
+        "name": "shieldtrade-analyst",
+        "workspace": "/home/naithick/hackathons/ossome-hacks",
+        "agentDir": "/home/naithick/.openclaw/agents/shieldtrade-analyst/agent"
+      },
+      {
+        "id": "shieldtrade-risk-manager",
+        "name": "shieldtrade-risk-manager",
+        "workspace": "/home/naithick/hackathons/ossome-hacks",
+        "agentDir": "/home/naithick/.openclaw/agents/shieldtrade-risk-manager/agent"
+      },
+      {
+        "id": "shieldtrade-trader",
+        "name": "shieldtrade-trader",
+        "workspace": "/home/naithick/hackathons/ossome-hacks",
+        "agentDir": "/home/naithick/.openclaw/agents/shieldtrade-trader/agent"
       }
-    }
+    ]
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
   },
   "gateway": {
+    "port": 18789,
     "mode": "local",
+    "bind": "loopback",
     "auth": {
       "mode": "token",
-      "token": "d17d4ab08c80922f2bff84cedcad95e54b75e7c2d16ebb01"
+      "token": "9100932b27f2d9ae775d33e7a10090db0c24bd0d28665b66"
     }
   },
   "skills": {
     "load": {
       "extraDirs": [
-        "../skills"
+        "/home/naithick/hackathons/ossome-hacks/skills"
       ]
     }
   },
   "plugins": {
     "allow": [
       "google",
-      "armoriq"
+      "armoriq",
+      "duckduckgo"
     ],
     "entries": {
       "google": {
-        "enabled": true
+        "enabled": true,
+        "config": {}
       },
       "armoriq": {
-        "enabled": true
+        "enabled": true,
+        "config": {
+          "enabled": true,
+          "cryptoPolicyEnabled": true,
+          "csrgEndpoint": "https://customer-iap.armoriq.ai",
+          "policyPath": "/home/naithick/hackathons/ossome-hacks/config/shieldtrade-policies.yaml"
+        }
       }
     }
   }
