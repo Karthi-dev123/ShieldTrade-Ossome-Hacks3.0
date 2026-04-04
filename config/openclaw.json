@@ -50,7 +50,7 @@
     "bind": "loopback",
     "auth": {
       "mode": "token",
-      "token": "9100932b27f2d9ae775d33e7a10090db0c24bd0d28665b66"
+      "token": "<YOUR_AUTH_TOKEN_HERE>"
     }
   },
   "skills": {
