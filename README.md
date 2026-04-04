@@ -236,10 +236,4 @@ python scripts/policy_engine.py validate-all '<json_request>'
 ## License
 
 MIT — see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-  <sub>Built with 🛡️ by Team Avengers — Secured by <b>ArmorIQ</b></sub>
-</div>
 ]]>

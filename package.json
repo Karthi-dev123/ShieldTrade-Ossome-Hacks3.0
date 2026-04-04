@@ -8,7 +8,6 @@
     "test": "echo \"See: pytest tests/ -v\" && exit 0"
   },
   "keywords": ["multi-agent", "trading", "armoriq", "openclaw"],
-  "author": "Team Avengers",
   "license": "MIT",
   "dependencies": {
     "express": "^5.2.1"
