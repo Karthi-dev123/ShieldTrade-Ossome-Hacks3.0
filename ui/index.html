@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShieldTrade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:         #0d0c15;
+  --sidebar:    #100f1a;
+  --surface:    #141320;
+  --card:       #1b1929;
+  --card2:      #211f32;
+  --border:     rgba(255,255,255,0.06);
+  --border2:    rgba(255,255,255,0.10);
+  --border3:    rgba(255,255,255,0.15);
+  --text:       #e2e0f0;
+  --text2:      #9b99b8;
+  --dim:        #6a677f;
+  --dimmer:     #3d3b52;
+  --purple:     #8b5cf6;
+  --purple2:    #a78bfa;
+  --purple-dim: rgba(139,92,246,0.14);
+  --purple-glow:rgba(139,92,246,0.30);
+  --green:      #22c55e;
+  --green-dim:  rgba(34,197,94,0.14);
+  --red:        #ef4444;
+  --red-dim:    rgba(239,68,68,0.14);
+  --blue:       #60a5fa;
+  --blue-dim:   rgba(96,165,250,0.14);
+  --yellow:     #f59e0b;
+  --orange:     #f97316;
+  --radius:     10px;
+  --radius-sm:  6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--dimmer); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+
+/* ── ROOT LAYOUT ── */
+#app {
+  height: 100vh;
+  display: flex;
+}
+
+/* ══════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════ */
+#sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+#logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon {
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(124,58,237,0.4);
+}
+.logo-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.logo-tag {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--purple2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--purple-dim);
+  border: 1px solid rgba(139,92,246,0.25);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+}
+
+#nav {
+  flex: 1;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+  padding: 10px 8px 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  user-select: none;
+  position: relative;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.nav-item.active {
+  background: var(--purple-dim);
+  color: var(--purple2);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 2px;
+  background: var(--purple);
+  border-radius: 0 2px 2px 0;
+}
+.nav-icon {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.7;
+  font-size: 15px;
+}
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--purple);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 9px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 10px 8px;
+}
+.market-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.market-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.market-dot.closed { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.market-dot.open   { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ══════════════════════════════════════════
+   MAIN CONTENT
+══════════════════════════════════════════ */
+#content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  height: 52px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 14px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+}
+.page-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.page-title .icon { color: var(--purple2); font-size: 16px; }
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 6px 12px;
+  width: 220px;
+  cursor: text;
+  margin-left: auto;
+}
+.search-wrap input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  width: 100%;
+}
+.search-wrap input::placeholder { color: var(--dim); }
+.search-icon { color: var(--dim); font-size: 13px; flex-shrink: 0; }
+
+.kbd {
+  font-size: 10px;
+  color: var(--dim);
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: 'Inter', monospace;
+}
+
+.account-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.account-pill .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 5px var(--green);
+}
+
+.connect-btn {
+  background: var(--purple);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 20px rgba(139,92,246,0.3);
+}
+.connect-btn:hover { background: #7c3aed; box-shadow: 0 0 28px rgba(139,92,246,0.45); }
+
+/* ── BODY SPLIT ── */
+#body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════
+   MARKET PANEL (LEFT)
+══════════════════════════════════════════ */
+#market-panel {
+  width: 310px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.panel-head {
+  padding: 14px 16px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-head .live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* Stat strip */
+#stat-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--border);
+}
+.stat-cell {
+  background: var(--surface);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.stat-label { font-size: 10px; color: var(--dim); font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; }
+.stat-val { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+.stat-val.green { color: var(--green); }
+.stat-val.purple { color: var(--purple2); }
+.stat-sub { font-size: 10px; color: var(--dim); }
+
+/* Watchlist */
+#watchlist-section { flex-shrink: 0; }
+.watch-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+  user-select: none;
+}
+.watch-item:hover { background: rgba(139,92,246,0.05); }
+.watch-item.active { background: rgba(139,92,246,0.08); }
+.watch-logo {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid var(--border2);
+}
+.watch-info { flex: 1; min-width: 0; }
+.watch-sym { font-size: 13px; font-weight: 600; color: var(--text); }
+.watch-name { font-size: 11px; color: var(--dim); }
+.watch-right { text-align: right; }
+.watch-px { font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.watch-chg { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.watch-chg.up { color: var(--green); }
+.watch-chg.dn { color: var(--red); }
+
+/* Positions section */
+#positions-section {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.pos-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.pos-empty .icon { font-size: 28px; opacity: 0.4; }
+.pos-row {
+  display: flex;
+  align-items: center;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.pos-sym { font-size: 13px; font-weight: 600; color: var(--purple2); width: 52px; }
+.pos-details { flex: 1; }
+.pos-qty-line { font-size: 12px; color: var(--text); }
+.pos-avg { font-size: 11px; color: var(--dim); }
+.pos-pnl { text-align: right; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pos-pnl.pos { color: var(--green); }
+.pos-pnl.neg { color: var(--red); }
+
+/* Policy section */
+#policy-section {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+.policy-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.policy-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.policy-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  background: var(--card);
+  transition: all 0.25s;
+}
+.policy-chip.active { color: var(--green); border-color: rgba(34,197,94,0.35); background: var(--green-dim); }
+.policy-chip.fail   { color: var(--red);   border-color: rgba(239,68,68,0.35);  background: var(--red-dim); }
+.policy-chip.checking { color: var(--yellow); border-color: rgba(245,158,11,0.35); animation: pulse 0.8s infinite; }
+
+/* ══════════════════════════════════════════
+   CHAT PANEL (RIGHT)
+══════════════════════════════════════════ */
+#chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  position: relative;
+}
+
+/* Subtle radial glow behind chat */
+#chat-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 60% 20%, rgba(139,92,246,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.chat-header {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  background: rgba(16,15,26,0.6);
+  backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 2;
+}
+.chat-header-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: var(--purple-dim);
+  border: 1px solid rgba(139,92,246,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.chat-header-info h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.chat-header-info p {
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 1px;
+}
+.agent-pills {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.agent-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+}
+.agent-pill.analyst  { color: var(--blue);   border-color: rgba(96,165,250,0.3);  background: var(--blue-dim); }
+.agent-pill.risk     { color: var(--purple2); border-color: rgba(167,139,250,0.3); background: var(--purple-dim); }
+.agent-pill.trader   { color: var(--green);   border-color: rgba(34,197,94,0.3);   background: var(--green-dim); }
+.agent-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.agent-pill .dot.active { animation: pulse 1.2s infinite; }
+
+/* Messages */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* User message */
+.msg-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.msg-user .bubble {
+  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 14px 14px 3px 14px;
+  max-width: 70%;
+  font-size: 13.5px;
+  line-height: 1.55;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.25);
+}
+.msg-user .msg-meta { font-size: 11px; color: var(--dim); }
+
+/* Agent message */
+.msg-agent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: 88%;
+}
+.agent-avatar {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid;
+  letter-spacing: 0;
+}
+.agent-avatar.analyst { background: var(--blue-dim); color: var(--blue); border-color: rgba(96,165,250,0.25); }
+.agent-avatar.risk    { background: var(--purple-dim); color: var(--purple2); border-color: rgba(167,139,250,0.25); }
+.agent-avatar.trader  { background: var(--green-dim); color: var(--green); border-color: rgba(34,197,94,0.25); }
+.agent-avatar.system  { background: var(--card); color: var(--dim); border-color: var(--border2); }
+
+.msg-body { flex: 1; }
+.msg-label {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.msg-label .agent-name { text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; }
+.msg-label .agent-name.analyst { color: var(--blue); }
+.msg-label .agent-name.risk    { color: var(--purple2); }
+.msg-label .agent-name.trader  { color: var(--green); }
+.msg-label .agent-name.system  { color: var(--dim); }
+.msg-label .msg-time { color: var(--dimmer); font-size: 10px; font-weight: 400; }
+
+.msg-bubble {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 3px 12px 12px 12px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  line-height: 1.58;
+  color: var(--text);
+}
+.msg-bubble p { margin-bottom: 6px; }
+.msg-bubble p:last-child { margin-bottom: 0; }
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+}
+.typing-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--dim);
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce {
+  0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Trade card */
+.trade-card {
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.trade-card-head {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.trade-action-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.trade-action-badge.buy  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+.trade-action-badge.sell { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+.trade-sym { font-size: 14px; font-weight: 700; color: var(--text); }
+.trade-status-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.trade-status-badge.accepted { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+.trade-status-badge.pending  { background: rgba(245,158,11,0.12); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
+.trade-status-badge.rejected { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+
+.trade-card-body {
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+.trade-field { display: flex; flex-direction: column; gap: 2px; }
+.trade-field-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
+.trade-field-val { font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Token chip */
+.token-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--purple-dim);
+  color: var(--purple2);
+  border: 1px solid rgba(139,92,246,0.25);
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+
+/* Policy checks in message */
+.inline-checks {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.check-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.check-chip.pass { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+.check-chip.fail { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+
+/* Pipeline progress bar */
+#pipeline-bar {
+  padding: 8px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(16,15,26,0.7);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.pipeline-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--dimmer);
+  font-weight: 500;
+  transition: color 0.3s;
+}
+.pipeline-step.active { color: var(--purple2); }
+.pipeline-step.done   { color: var(--green); }
+.pipeline-step .step-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.pipeline-step.active .step-dot {
+  border-color: var(--purple);
+  background: var(--purple-dim);
+  color: var(--purple2);
+  box-shadow: 0 0 8px rgba(139,92,246,0.3);
+  animation: pulse 1.2s infinite;
+}
+.pipeline-step.done .step-dot {
+  border-color: var(--green);
+  background: var(--green-dim);
+  color: var(--green);
+}
+.pipeline-connector {
+  width: 28px;
+  height: 1px;
+  background: var(--border2);
+  flex-shrink: 0;
+  margin: 0 4px;
+  position: relative;
+  overflow: hidden;
+}
+.pipeline-connector .flow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--purple), transparent);
+  transform: translateX(-100%);
+  transition: transform 0s;
+}
+.pipeline-connector.flowing .flow {
+  animation: flow-anim 0.8s ease forwards;
+}
+@keyframes flow-anim {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+.pipeline-connector.done { background: var(--green); }
+
+/* Chat input area */
+#chat-input-area {
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(16,15,26,0.7);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.quick-chips {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.quick-chip {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text2);
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.quick-chip:hover {
+  background: var(--purple-dim);
+  border-color: rgba(139,92,246,0.3);
+  color: var(--purple2);
+}
+
+.input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  transition: border-color 0.15s;
+}
+.input-row:focus-within { border-color: rgba(139,92,246,0.45); box-shadow: 0 0 0 3px rgba(139,92,246,0.08); }
+#chat-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  resize: none;
+  line-height: 1.5;
+  max-height: 120px;
+  min-height: 22px;
+}
+#chat-textarea::placeholder { color: var(--dim); }
+.input-actions { display: flex; gap: 7px; align-items: center; }
+.attach-btn {
+  width: 30px; height: 30px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  color: var(--dim);
+  transition: all 0.15s;
+}
+.attach-btn:hover { background: var(--surface); color: var(--text2); }
+#send-btn {
+  width: 32px; height: 32px;
+  background: var(--purple);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  color: #fff;
+  transition: all 0.15s;
+  box-shadow: 0 0 12px rgba(139,92,246,0.3);
+}
+#send-btn:hover { background: #7c3aed; box-shadow: 0 0 20px rgba(139,92,246,0.45); }
+#send-btn:disabled { background: var(--dimmer); box-shadow: none; cursor: not-allowed; }
+
+/* ── AGENT RUNNING STATUS BAR ── */
+#running-banner {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 24px;
+  background: rgba(139,92,246,0.08);
+  border-bottom: 1px solid rgba(139,92,246,0.2);
+  font-size: 12px;
+  color: var(--purple2);
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+#running-banner.visible { display: flex; }
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--purple-dim);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════ -->
+  <div id="sidebar">
+    <div id="logo-row">
+      <div class="logo-icon">🛡</div>
+      <span class="logo-name">ShieldTrade</span>
+      <span class="logo-tag">BETA</span>
+    </div>
+
+    <nav id="nav">
+      <div class="nav-section-label">Main</div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">⬚</span> Dashboard
+      </div>
+      <div class="nav-item active" onclick="setPage(this)">
+        <span class="nav-icon">💬</span> Trade Chat
+        <span class="nav-badge" id="chat-badge">3</span>
+      </div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">◫</span> Portfolio
+      </div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">≡</span> Positions
+      </div>
+
+      <div class="nav-section-label">Agents</div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">◎</span> Analyst
+      </div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">◈</span> Risk Manager
+      </div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">⬡</span> Trader
+      </div>
+
+      <div class="nav-section-label">System</div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">⊙</span> Activity Log
+      </div>
+      <div class="nav-item" onclick="setPage(this)">
+        <span class="nav-icon">⚙</span> Settings
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="market-status">
+        <span class="market-dot closed" id="mkt-dot"></span>
+        <span id="mkt-label" style="flex:1">Market Closed</span>
+        <span style="font-size:10px;color:var(--dimmer)">09:30–16:00 ET</span>
+      </div>
+      <div class="nav-item" style="color:var(--dim)">
+        <span class="nav-icon">↩</span> Log Out
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CONTENT ══════════════════════════════════════ -->
+  <div id="content">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <div class="page-title">
+        <span class="icon">💬</span>
+        Trade Chat
+        <span style="width:1px;height:14px;background:var(--border2);margin:0 4px"></span>
+        <span style="font-size:12px;color:var(--dim);font-weight:400">OpenClaw Multi-Agent Pipeline</span>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Search trades, tickers..." />
+        <span class="kbd">⌘K</span>
+      </div>
+      <div class="account-pill">
+        <span class="dot"></span>
+        <span>PA30OCZYOYAV</span>
+        <span style="color:var(--purple2);font-weight:600">$100,000</span>
+      </div>
+      <button class="connect-btn">Connected</button>
+    </div>
+
+    <!-- BODY -->
+    <div id="body">
+
+      <!-- ── MARKET PANEL ── -->
+      <div id="market-panel">
+        <div class="panel-head">
+          <span><span class="live-dot"></span>Live Markets</span>
+          <span id="mkt-time" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dimmer)"></span>
+        </div>
+
+        <!-- Stats -->
+        <div id="stat-strip">
+          <div class="stat-cell">
+            <span class="stat-label">Equity</span>
+            <span class="stat-val" id="s-equity">$100,000</span>
+            <span class="stat-sub">Paper account</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-label">Buying Power</span>
+            <span class="stat-val green" id="s-bp">$194,637</span>
+            <span class="stat-sub">Available</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-label">Today P&L</span>
+            <span class="stat-val purple" id="s-pnl">—</span>
+            <span class="stat-sub">Unrealized</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-label">Open Pos.</span>
+            <span class="stat-val" id="s-pos-count">0</span>
+            <span class="stat-sub">Positions</span>
+          </div>
+        </div>
+
+        <!-- Watchlist -->
+        <div class="panel-head" style="border-top:1px solid var(--border)">
+          <span>Watchlist</span>
+          <span style="font-size:10px;color:var(--purple2);cursor:pointer;font-weight:600;text-transform:none;letter-spacing:0">+ Add</span>
+        </div>
+        <div id="watchlist-section"></div>
+
+        <!-- Positions -->
+        <div class="panel-head" style="border-top:1px solid var(--border)">
+          <span>Positions</span>
+          <span id="pos-count-label" style="font-size:10px;color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">0 open</span>
+        </div>
+        <div id="positions-section">
+          <div class="pos-empty" id="no-positions">
+            <span class="icon">◫</span>
+            <span>No open positions</span>
+            <span style="color:var(--dimmer)">Use chat to place trades</span>
+          </div>
+        </div>
+
+        <!-- Policy -->
+        <div id="policy-section">
+          <div class="policy-title">
+            <span>🛡</span> ArmorClaw Policy
+          </div>
+          <div class="policy-grid">
+            <span class="policy-chip" id="pc-ticker">Ticker list</span>
+            <span class="policy-chip" id="pc-shares">≤100 shares</span>
+            <span class="policy-chip" id="pc-amount">≤$2K/order</span>
+            <span class="policy-chip" id="pc-daily">≤$10K/day</span>
+            <span class="policy-chip" id="pc-delegation">Delegation</span>
+            <span class="policy-chip" id="pc-hours">Mkt hours</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CHAT PANEL ── -->
+      <div id="chat-panel">
+
+        <!-- Chat header -->
+        <div class="chat-header">
+          <div class="chat-header-icon">🤖</div>
+          <div class="chat-header-info">
+            <h2>ShieldTrade Agent</h2>
+            <p>Analyst → Risk Manager → Trader pipeline</p>
+          </div>
+          <div class="agent-pills">
+            <div class="agent-pill analyst" id="pill-analyst">
+              <span class="dot" id="dot-analyst"></span> Analyst
+            </div>
+            <div class="agent-pill risk" id="pill-risk">
+              <span class="dot" id="dot-risk"></span> Risk Mgr
+            </div>
+            <div class="agent-pill trader" id="pill-trader">
+              <span class="dot" id="dot-trader"></span> Trader
+            </div>
+          </div>
+        </div>
+
+        <!-- Running banner -->
+        <div id="running-banner">
+          <span class="spinner"></span>
+          <span id="running-text">OpenClaw pipeline running...</span>
+        </div>
+
+        <!-- Pipeline progress -->
+        <div id="pipeline-bar">
+          <div class="pipeline-step" id="ps-analyst">
+            <div class="step-dot">A</div>
+            <span>Analyst</span>
+          </div>
+          <div class="pipeline-connector" id="pc1"><div class="flow"></div></div>
+          <div class="pipeline-step" id="ps-risk">
+            <div class="step-dot">R</div>
+            <span>Risk Mgr</span>
+          </div>
+          <div class="pipeline-connector" id="pc2"><div class="flow"></div></div>
+          <div class="pipeline-step" id="ps-trader">
+            <div class="step-dot">T</div>
+            <span>Trader</span>
+          </div>
+          <span style="margin-left:auto;font-size:11px;color:var(--dimmer)" id="pipeline-idle">Ready</span>
+        </div>
+
+        <!-- Messages -->
+        <div id="messages">
+          <!-- Boot message -->
+          <div class="msg-agent">
+            <div class="agent-avatar system">ST</div>
+            <div class="msg-body">
+              <div class="msg-label">
+                <span class="agent-name system">ShieldTrade</span>
+                <span class="msg-time" id="boot-time"></span>
+              </div>
+              <div class="msg-bubble">
+                <p>Welcome to ShieldTrade. I'm your multi-agent trading assistant powered by OpenClaw.</p>
+                <p>I run three specialized agents — <strong style="color:var(--blue)">Analyst</strong>, <strong style="color:var(--purple2)">Risk Manager</strong>, and <strong style="color:var(--green)">Trader</strong> — sequentially to analyze markets, enforce policy, and execute paper trades on Alpaca.</p>
+                <p style="color:var(--dim);font-size:12px">Try: "Analyze NVDA" · "Buy 10 AAPL if it looks good" · "What are my positions?"</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input area -->
+        <div id="chat-input-area">
+          <div class="quick-chips">
+            <div class="quick-chip" onclick="sendQuick('Analyze NVDA and give me a recommendation')">📊 Analyze NVDA</div>
+            <div class="quick-chip" onclick="sendQuick('Buy AAPL if fundamentals look strong, max 15 shares')">🟢 Buy AAPL</div>
+            <div class="quick-chip" onclick="sendQuick('Run full pipeline on MSFT — analyze and trade if approved')">⚡ Full pipeline MSFT</div>
+            <div class="quick-chip" onclick="sendQuick('What are my current positions?')">◫ Positions</div>
+            <div class="quick-chip" onclick="sendQuick('Check policy limits and daily spend')">🛡 Policy status</div>
+          </div>
+          <div class="input-row">
+            <textarea id="chat-textarea" rows="1" placeholder="Message ShieldTrade agents..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <div class="input-actions">
+              <button class="attach-btn" title="Attach">📎</button>
+              <button id="send-btn" onclick="handleSend()" title="Send">↑</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /chat-panel -->
+
+    </div><!-- /body -->
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const TICKERS = {
+  NVDA:  { name:'NVIDIA Corp',    bid:166.86, chg:+2.14, pct:+1.30, color:'#76b900' },
+  AAPL:  { name:'Apple Inc',      bid:241.35, chg:-3.20, pct:-1.31, color:'#9b9b9b' },
+  MSFT:  { name:'Microsoft Corp', bid:349.21, chg:+1.85, pct:+0.53, color:'#00a4ef' },
+  GOOGL: { name:'Alphabet Inc',   bid:153.22, chg:-0.88, pct:-0.57, color:'#ea4335' },
+  AMZN:  { name:'Amazon.com',     bid:182.60, chg:+0.43, pct:+0.24, color:'#ff9900' },
+};
+const TICKER_LOGOS = { NVDA:'NV', AAPL:'🍎', MSFT:'MS', GOOGL:'G', AMZN:'Az' };
+const LOGO_COLORS  = { NVDA:'#1a2a1a', AAPL:'#2a2a2a', MSFT:'#1a1f2a', GOOGL:'#2a1a1a', AMZN:'#2a220a' };
+
+let positions = [];
+let isRunning = false;
+let activeTicker = 'NVDA';
+let msgCount = 0;
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function nowStr() {
+  return new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+}
+function fmtUSD(n) {
+  return '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+function autoResize(el) {
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,120)+'px';
+}
+
+// ── MARKET STATUS ─────────────────────────────────────────────────────────────
+function updateMarketStatus() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const h=et.getHours(), m=et.getMinutes(), day=et.getDay();
+  const mins=h*60+m;
+  const open=day>=1&&day<=5&&mins>=570&&mins<960;
+  document.getElementById('mkt-dot').className='market-dot '+(open?'open':'closed');
+  document.getElementById('mkt-label').textContent=open?'Market Open':'Market Closed';
+  document.getElementById('mkt-time').textContent=et.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' ET';
+}
+
+// ── WATCHLIST ─────────────────────────────────────────────────────────────────
+function buildWatchlist() {
+  const el=document.getElementById('watchlist-section');
+  el.innerHTML='';
+  Object.entries(TICKERS).forEach(([sym,t])=>{
+    const dir=t.chg>=0?'up':'dn';
+    const sign=t.chg>=0?'+':'';
+    const div=document.createElement('div');
+    div.className='watch-item'+(sym===activeTicker?' active':'');
+    div.id='wi-'+sym;
+    div.innerHTML=`
+      <div class="watch-logo" style="background:${LOGO_COLORS[sym]};border-color:rgba(255,255,255,0.08);color:#ccc">${TICKER_LOGOS[sym]}</div>
+      <div class="watch-info">
+        <div class="watch-sym">${sym}</div>
+        <div class="watch-name">${t.name}</div>
+      </div>
+      <div class="watch-right">
+        <div class="watch-px">$${t.bid.toFixed(2)}</div>
+        <div class="watch-chg ${dir}">${sign}${t.pct.toFixed(2)}%</div>
+      </div>`;
+    div.onclick=()=>{ activeTicker=sym; buildWatchlist(); };
+    el.appendChild(div);
+  });
+}
+
+// ── POSITIONS ─────────────────────────────────────────────────────────────────
+function renderPositions() {
+  const sec=document.getElementById('positions-section');
+  const noEl=document.getElementById('no-positions');
+  document.getElementById('s-pos-count').textContent=positions.length;
+  document.getElementById('pos-count-label').textContent=positions.length+' open';
+
+  // remove old pos rows
+  sec.querySelectorAll('.pos-row').forEach(e=>e.remove());
+
+  if(positions.length===0){ noEl.style.display=''; return; }
+  noEl.style.display='none';
+  let totalPnl=0;
+  positions.forEach(p=>{
+    const mkt=TICKERS[p.sym]?.bid||p.avgCost;
+    const pnl=(mkt-p.avgCost)*p.qty;
+    totalPnl+=pnl;
+    const row=document.createElement('div');
+    row.className='pos-row';
+    row.innerHTML=`
+      <div class="pos-sym">${p.sym}</div>
+      <div class="pos-details">
+        <div class="pos-qty-line">${p.qty} shares @ $${mkt.toFixed(2)}</div>
+        <div class="pos-avg">Avg cost $${p.avgCost.toFixed(2)}</div>
+      </div>
+      <div class="pos-pnl ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}${fmtUSD(pnl)}</div>`;
+    sec.appendChild(row);
+  });
+  document.getElementById('s-pnl').textContent=(totalPnl>=0?'+':'')+fmtUSD(totalPnl);
+  document.getElementById('s-pnl').style.color=totalPnl>=0?'var(--green)':'var(--red)';
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function setPage(el) {
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── PIPELINE STATUS ───────────────────────────────────────────────────────────
+function pipelineReset() {
+  ['analyst','risk','trader'].forEach(a=>{
+    document.getElementById('ps-'+a).className='pipeline-step';
+    document.getElementById('dot-'+a).classList.remove('active');
+  });
+  ['pc1','pc2'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.classList.remove('flowing','done');
+  });
+  document.getElementById('pipeline-idle').textContent='Ready';
+  document.getElementById('pipeline-idle').style.color='var(--dimmer)';
+}
+function pipelineStep(step) {
+  const steps=['analyst','risk','trader'];
+  const idx=steps.indexOf(step);
+  steps.forEach((s,i)=>{
+    const el=document.getElementById('ps-'+s);
+    if(i<idx){ el.className='pipeline-step done'; }
+    else if(i===idx){ el.className='pipeline-step active'; }
+    else { el.className='pipeline-step'; }
+    const dot=document.getElementById('dot-'+s);
+    dot.classList.toggle('active', i===idx);
+  });
+  if(idx>0){
+    const con=document.getElementById('pc'+(idx));
+    con.classList.add('flowing');
+    setTimeout(()=>{ con.classList.remove('flowing'); con.classList.add('done'); }, 800);
+  }
+  document.getElementById('pipeline-idle').textContent=`Running ${step}...`;
+  document.getElementById('pipeline-idle').style.color='var(--purple2)';
+}
+function pipelineDone(success=true) {
+  ['analyst','risk','trader'].forEach(a=>{
+    document.getElementById('ps-'+a).className='pipeline-step '+(success?'done':'');
+    document.getElementById('dot-'+a).classList.remove('active');
+  });
+  ['pc1','pc2'].forEach(id=>{ document.getElementById(id).classList.add('done'); });
+  const idle=document.getElementById('pipeline-idle');
+  idle.textContent=success?'Complete':'Blocked';
+  idle.style.color=success?'var(--green)':'var(--red)';
+}
+
+// ── POLICY CHIPS ──────────────────────────────────────────────────────────────
+function policySet(id, state) {
+  const el=document.getElementById('pc-'+id);
+  el.className='policy-chip '+(state||'');
+}
+function policyReset() {
+  ['ticker','shares','amount','daily','delegation','hours'].forEach(k=>policySet(k,''));
+}
+
+// ── MESSAGE BUILDER ───────────────────────────────────────────────────────────
+function appendUserMsg(text) {
+  const el=document.getElementById('messages');
+  const div=document.createElement('div');
+  div.className='msg-user';
+  div.innerHTML=`
+    <div class="bubble">${text}</div>
+    <span class="msg-meta">${nowStr()}</span>`;
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+}
+
+function appendAgentMsg(agentType, agentLabel, content, extraHtml='') {
+  const el=document.getElementById('messages');
+  const div=document.createElement('div');
+  div.className='msg-agent';
+  const initials={analyst:'A',risk:'R',trader:'T',system:'ST'}[agentType]||'?';
+  div.innerHTML=`
+    <div class="agent-avatar ${agentType}">${initials}</div>
+    <div class="msg-body">
+      <div class="msg-label">
+        <span class="agent-name ${agentType}">${agentLabel}</span>
+        <span class="msg-time">${nowStr()}</span>
+      </div>
+      <div class="msg-bubble">
+        <p>${content}</p>
+        ${extraHtml}
+      </div>
+    </div>`;
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+  return div;
+}
+
+function appendTyping(agentType, agentLabel) {
+  const el=document.getElementById('messages');
+  const div=document.createElement('div');
+  div.className='msg-agent';
+  const initials={analyst:'A',risk:'R',trader:'T',system:'ST'}[agentType]||'?';
+  div.id='typing-'+agentType;
+  div.innerHTML=`
+    <div class="agent-avatar ${agentType}">${initials}</div>
+    <div class="msg-body">
+      <div class="msg-label">
+        <span class="agent-name ${agentType}">${agentLabel}</span>
+        <span class="msg-time" style="color:var(--purple2);font-size:10px">Thinking...</span>
+      </div>
+      <div class="msg-bubble">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>`;
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+}
+function removeTyping(agentType) {
+  const el=document.getElementById('typing-'+agentType);
+  if(el) el.remove();
+}
+
+function setRunning(visible, text='') {
+  const el=document.getElementById('running-banner');
+  el.classList.toggle('visible', visible);
+  if(text) document.getElementById('running-text').textContent=text;
+}
+
+// ── PIPELINE RUNNER ───────────────────────────────────────────────────────────
+async function runPipeline(sym, userText) {
+  if(isRunning) return;
+  isRunning=true;
+  document.getElementById('send-btn').disabled=true;
+  document.getElementById('chat-badge').textContent='•';
+  policyReset();
+  pipelineReset();
+
+  const t = TICKERS[sym];
+  const bid = t.bid;
+  msgCount++;
+
+  // ── ANALYST ────────────────────────────────────────────────────────────────
+  setRunning(true, 'Analyst agent initializing...');
+  pipelineStep('analyst');
+  await sleep(600);
+
+  appendTyping('analyst','Analyst');
+  await sleep(1400);
+  removeTyping('analyst');
+
+  const doAction = Math.random()>0.2 ? 'buy' : 'sell';
+  const qty = Math.floor(Math.random()*15)+5;
+  const priceTgt = parseFloat((bid+(Math.random()*3-1)).toFixed(2));
+  const conf = parseFloat((0.68+Math.random()*0.22).toFixed(2));
+  const reasons = {
+    buy: [
+      `RSI(14) reading 38.2 — oversold territory. MACD line has crossed above signal line indicating bullish momentum shift. 20-day MA holding as strong support at $${(bid*0.97).toFixed(2)}.`,
+      `Volume spike observed at session open (+43% above 30D avg). Institutional accumulation pattern. Earnings beat consensus by 12% last quarter — sentiment score 0.74.`,
+    ],
+    sell: [
+      `RSI(14) at 73.8 — overbought. Bearish divergence forming on the 4H chart. Distribution volume pattern detected. Recommend reducing exposure.`,
+    ]
+  };
+  const reasoning=reasons[doAction][Math.floor(Math.random()*reasons[doAction].length)];
+  const amtUSD=(qty*priceTgt).toFixed(2);
+
+  appendAgentMsg('analyst','Analyst',
+    `Fetched market data for <strong>${sym}</strong> — bid $${bid.toFixed(2)} · ${t.name}<br><br>${reasoning}`,
+    `<div style="margin-top:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;font-size:12px">
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div><span style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.07em">Action</span><br><strong style="color:${doAction==='buy'?'var(--green)':'var(--red)'};font-size:14px">${doAction.toUpperCase()}</strong></div>
+        <div><span style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.07em">Qty</span><br><strong>${qty} shares</strong></div>
+        <div><span style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.07em">Target</span><br><strong>$${priceTgt}</strong></div>
+        <div><span style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.07em">Confidence</span><br><strong style="color:var(--purple2)">${(conf*100).toFixed(0)}%</strong></div>
+        <div><span style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.07em">Amount</span><br><strong>$${amtUSD}</strong></div>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim)">Report saved → output/reports/${sym.toLowerCase()}-rec.json</div>
+    </div>`
+  );
+
+  // ── RISK MANAGER ───────────────────────────────────────────────────────────
+  setRunning(true, 'Risk Manager validating policy...');
+  pipelineStep('risk');
+  await sleep(700);
+
+  appendTyping('risk','Risk Manager');
+  await sleep(1200);
+  removeTyping('risk');
+
+  // Simulate policy checks
+  const isApproved = ['AAPL','MSFT','GOOGL','AMZN','NVDA'].includes(sym);
+  const sharesOk = qty<=100;
+  const amountOk = parseFloat(amtUSD)<=2000;
+
+  ['ticker','shares','amount','daily','hours'].forEach(k=>policySet(k,'checking'));
+  await sleep(300);
+
+  policySet('ticker', isApproved?'active':'fail');
+  await sleep(150);
+  policySet('shares', sharesOk?'active':'fail');
+  await sleep(150);
+  policySet('amount', amountOk?'active':'fail');
+  await sleep(150);
+  policySet('daily','active');
+  await sleep(150);
+  policySet('hours','active');
+  await sleep(150);
+
+  const allOk = isApproved && sharesOk;
+  const token = uuid().substring(0,20)+'...';
+
+  if (!allOk) {
+    policySet('delegation','fail');
+    appendAgentMsg('risk','Risk Manager',
+      `Policy validation <strong style="color:var(--red)">FAILED</strong> for ${sym} ${qty} shares.`,
+      `<div class="inline-checks">
+        <span class="check-chip ${isApproved?'pass':'fail'}">${isApproved?'✓':'✗'} Ticker</span>
+        <span class="check-chip ${sharesOk?'pass':'fail'}">${sharesOk?'✓':'✗'} Shares ≤100</span>
+        <span class="check-chip ${amountOk?'pass':'fail'}">${amountOk?'✓':'✗'} Amount ≤$2K</span>
+        <span class="check-chip fail">✗ Delegation blocked</span>
+      </div>`
+    );
+    pipelineDone(false);
+    setRunning(false);
+    isRunning=false;
+    document.getElementById('send-btn').disabled=false;
+    return;
+  }
+
+  policySet('delegation','active');
+
+  appendAgentMsg('risk','Risk Manager',
+    `All ArmorClaw policy checks <strong style="color:var(--green)">PASSED</strong>. Issuing delegation token for Trader agent (TTL 300s).`,
+    `<div class="inline-checks">
+      <span class="check-chip pass">✓ Ticker approved</span>
+      <span class="check-chip pass">✓ Shares ≤100</span>
+      <span class="check-chip pass">✓ Amount ≤$2K</span>
+      <span class="check-chip pass">✓ Daily limit OK</span>
+      <span class="check-chip pass">✓ Market hours</span>
+    </div>
+    <div class="token-chip" style="display:inline-flex;margin-top:8px">🔑 token: ${token}</div>`
+  );
+
+  // ── TRADER ─────────────────────────────────────────────────────────────────
+  setRunning(true, 'Trader executing on Alpaca...');
+  pipelineStep('trader');
+  await sleep(600);
+
+  appendTyping('trader','Trader');
+  await sleep(1300);
+  removeTyping('trader');
+
+  const orderId = uuid();
+
+  appendAgentMsg('trader','Trader',
+    `Delegation verified. Submitting market order to Alpaca paper account.`,
+    `<div class="trade-card">
+      <div class="trade-card-head">
+        <span class="trade-action-badge ${doAction}">${doAction}</span>
+        <span class="trade-sym">${sym}</span>
+        <span style="font-size:12px;color:var(--dim);margin-left:4px">· Market Order</span>
+        <span class="trade-status-badge accepted">ACCEPTED</span>
+      </div>
+      <div class="trade-card-body">
+        <div class="trade-field">
+          <span class="trade-field-label">Quantity</span>
+          <span class="trade-field-val">${qty} shares</span>
+        </div>
+        <div class="trade-field">
+          <span class="trade-field-label">Est. Amount</span>
+          <span class="trade-field-val">$${amtUSD}</span>
+        </div>
+        <div class="trade-field">
+          <span class="trade-field-label">TIF</span>
+          <span class="trade-field-val">DAY</span>
+        </div>
+        <div class="trade-field" style="grid-column:1/-1">
+          <span class="trade-field-label">Order ID</span>
+          <span class="trade-field-val" style="font-size:11px;color:var(--dim)">${orderId}</span>
+        </div>
+      </div>
+    </div>`
+  );
+
+  // Update positions
+  if(doAction==='buy') {
+    const ex=positions.find(p=>p.sym===sym);
+    if(ex){ const tot=ex.qty+qty; ex.avgCost=((ex.avgCost*ex.qty)+(bid*qty))/tot; ex.qty=tot; }
+    else   positions.push({sym,qty,avgCost:bid});
+  } else {
+    const ex=positions.find(p=>p.sym===sym);
+    if(ex){ ex.qty-=qty; if(ex.qty<=0) positions=positions.filter(p=>p.sym!==sym); }
+  }
+  renderPositions();
+
+  pipelineDone(true);
+  setRunning(false);
+  document.getElementById('chat-badge').textContent=String(++msgCount);
+  isRunning=false;
+  document.getElementById('send-btn').disabled=false;
+}
+
+// ── MESSAGE PARSING ───────────────────────────────────────────────────────────
+function parseIntent(text) {
+  const upper=text.toUpperCase();
+  // find ticker
+  const tickerFound=Object.keys(TICKERS).find(t=>upper.includes(t));
+  const sym=tickerFound||activeTicker;
+
+  if(upper.includes('POSITION')||upper.includes('PORTFOLIO')) {
+    return { type:'positions', sym };
+  }
+  if(upper.includes('POLICY')||upper.includes('LIMIT')||upper.includes('RULE')) {
+    return { type:'policy', sym };
+  }
+  if(upper.includes('ANALYZ')||upper.includes('LOOK')||
+     upper.includes('BUY')||upper.includes('SELL')||upper.includes('TRADE')||
+     upper.includes('PIPELINE')||upper.includes('RECOMMEND')) {
+    return { type:'trade', sym };
+  }
+  return { type:'general', sym };
+}
+
+async function handleIntent(text, intent) {
+  if(intent.type==='positions') {
+    if(positions.length===0) {
+      appendAgentMsg('system','ShieldTrade','You have no open positions. Use the chat to analyze a ticker and place trades.');
+    } else {
+      const rows=positions.map(p=>{
+        const mkt=TICKERS[p.sym]?.bid||p.avgCost;
+        const pnl=(mkt-p.avgCost)*p.qty;
+        return `<span style="color:var(--purple2);font-weight:600">${p.sym}</span> — ${p.qty} shares @ avg $${p.avgCost.toFixed(2)} · mkt $${mkt.toFixed(2)} · P&L <span style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${fmtUSD(pnl)}</span>`;
+      }).join('<br>');
+      appendAgentMsg('system','ShieldTrade',`You have <strong>${positions.length}</strong> open position${positions.length>1?'s':''}:<br><br>${rows}`);
+    }
+    return;
+  }
+  if(intent.type==='policy') {
+    appendAgentMsg('system','ShieldTrade',
+      `Current ArmorClaw policy constraints:`,
+      `<div style="margin-top:8px;font-size:12px;line-height:1.8">
+        <div>📋 <strong>Approved tickers:</strong> AAPL, MSFT, GOOGL, AMZN, NVDA</div>
+        <div>📋 <strong>Max shares/order:</strong> 100</div>
+        <div>📋 <strong>Max amount/order:</strong> $2,000 USD</div>
+        <div>📋 <strong>Daily aggregate limit:</strong> $10,000 USD</div>
+        <div>📋 <strong>Delegation TTL:</strong> 300 seconds</div>
+        <div>📋 <strong>Market hours:</strong> 09:30–16:00 ET (Mon–Fri)</div>
+      </div>`
+    );
+    return;
+  }
+  if(intent.type==='general') {
+    appendAgentMsg('system','ShieldTrade',
+      `I can analyze market data and execute trades on your behalf. Try asking me to analyze a specific ticker, or use one of the quick actions below to run the full pipeline.`
+    );
+    return;
+  }
+  // Trade pipeline
+  await runPipeline(intent.sym, text);
+}
+
+async function handleSend() {
+  const ta=document.getElementById('chat-textarea');
+  const text=ta.value.trim();
+  if(!text||isRunning) return;
+  ta.value='';
+  ta.style.height='auto';
+  appendUserMsg(text);
+  const intent=parseIntent(text);
+  await handleIntent(text,intent);
+}
+
+function handleKey(e) {
+  if(e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); handleSend(); }
+}
+
+function sendQuick(text) {
+  if(isRunning) return;
+  document.getElementById('chat-textarea').value=text;
+  handleSend();
+}
+
+// ── PRICE TICK ────────────────────────────────────────────────────────────────
+function tickPrices() {
+  Object.values(TICKERS).forEach(t=>{
+    t.bid=parseFloat((t.bid+(Math.random()-0.499)*0.22).toFixed(2));
+  });
+  buildWatchlist();
+  renderPositions();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('boot-time').textContent=nowStr();
+updateMarketStatus();
+buildWatchlist();
+renderPositions();
+
+setInterval(tickPrices, 2800);
+setInterval(updateMarketStatus, 15000);
+</script>
+</body>
+</html>
