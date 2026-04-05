@@ -5,6 +5,7 @@ output/reports/*
 output/risk-decisions/*
 output/trade-logs/*
 output/thoughts/*
+output/audit_logs.json
 !output/**/.gitkeep
 *.log
 .openclaw/
@@ -19,3 +20,4 @@ node_modules/
 __pycache__/
 venv/
 .build/
+.streamlit/secrets.toml

@@ -1,72 +1,75 @@
 ---
 name: shieldtrade-risk-manager
-description: Validate stock recommendations against policy constraints, perform risk assessment, check account eligibility, and issue signed delegation tokens for approved trades. Enforces position limits, portfolio constraints, and declarative YAML policies.
+description: Validate analyst recommendations against policy, check account state, and issue delegation tokens in the exact JSON shape enforced by scripts/policy_engine.py. Commands match docs/contracts.md.
 tools:
+  - name: policy_engine.py check-role
+    description: Confirm risk_manager may use a given abstract tool name per shieldtrade-policies.yaml
+    usage: "python scripts/policy_engine.py check-role risk_manager approve_trade"
   - name: policy_engine.py check-trade
-    description: Validate trade against shieldtrade-policies.yaml constraints
-    usage: "policy_engine.py check-trade AAPL 10 buy"
+    description: Run full policy checks for a hypothetical trade (ticker, shares, notional, domain)
+    usage: "python scripts/policy_engine.py check-trade risk_manager approve_trade AAPL 5 990.00"
   - name: alpaca_bridge.py account
-    description: Fetch current account balance, buying power, positions
-    usage: "alpaca_bridge.py account"
+    description: Fetch account status, buying power, cash (optional operational check)
+    usage: "python scripts/alpaca_bridge.py account"
   - name: file_read
-    description: Read recommendation JSON from /output/reports/
-    usage: "Read /output/reports/{TICKER}-recommendation.json"
+    description: Read recommendation JSON from output/reports/
+    usage: "Read output/reports/{TICKER}-recommendation.json"
   - name: file_write
-    description: Write delegation token to /output/risk-decisions/
-    usage: "Write to /output/risk-decisions/delegation-{TICKER}-{UUID}.json"
+    description: Write delegation token to output/risk-decisions/ per docs/contracts.md §2
+    usage: "Write output/risk-decisions/delegation-{TICKER}-{token_id}.json"
 forbidden_actions:
   - place_order: "RISK MANAGER MUST NEVER call place_order. That is Trader's responsibility."
   - quote: "RISK MANAGER MUST NOT fetch quotes directly. Use analyst recommendations instead."
   - bars: "RISK MANAGER MUST NOT fetch historical bars. Use analyst analysis only."
 workflow: |
+  ## Contract
+
+  - Recommendation input: **docs/contracts.md §1**
+  - Delegation output: **docs/contracts.md §2** (required for `check_delegation` / trader `validate-all`)
+
+  `check-trade` CLI shape (positional):
+
+  `python scripts/policy_engine.py check-trade <agent> <tool> <ticker> <shares> <amount_usd> [domain]`
+
+  Use `risk_manager` and `approve_trade` so the call matches `agent_roles.risk_manager` in `config/shieldtrade-policies.yaml`. Default domain can be omitted; the engine defaults to `paper-api.alpaca.markets`.
+
+  Parse engine stdout as JSON: use `decision` (`ALLOW` | `BLOCK`), `checks`, and `blocked_reasons`.
+
   ## Workflow
-  
-  1. **User Request**: User asks to validate and approve a trade
-     - Example: "Validate the latest AAPL recommendation"
-  
+
+  1. **User Request**: e.g. "Validate the latest AAPL recommendation"
+
   2. **Load Recommendation**:
-     - Read the recommendation JSON from `/output/reports/{TICKER}-recommendation.json`
-     - Verify file exists and is recent
-  
-  3. **Check Account State**:
-     - Call `alpaca_bridge.py account` to get current balance and positions
-     - Verify account is active and has sufficient buying power
-  
+     - Read `output/reports/{TICKER}-recommendation.json`
+     - Derive proposed `shares` and notional `amount_usd` (e.g. `proposed_shares` × `current_price`, capped by policy limits)
+
+  3. **Check Account (optional)**:
+     - `python scripts/alpaca_bridge.py account`
+
   4. **Run Policy Engine**:
-     - Call `policy_engine.py check-trade {TICKER} {QUANTITY} {SIDE}`
-     - Verify against shieldtrade-policies.yaml:
-       - Position limits per ticker
-       - Daily trading limits
-       - Portfolio diversification constraints
-       - Sector concentration limits
-  
-  5. **Approval Decision**:
-     - If all checks pass: Create signed delegation token
-     - If any check fails: Deny with reason
-  
-  6. **Write Delegation Token**:
-     - Create JSON file: `/output/risk-decisions/delegation-{TICKER}-{UUID}.json`
-     - Include: approved_action, approved_quantity, expires_at, policy_checks_passed, timestamp
-  
-  7. **Return to User**:
-     - Display approval status with policy reasons
-     - Provide delegation token ID for trader reference
-     - DO NOT attempt to execute trade
-  
-  ## Example Output
+     - `python scripts/policy_engine.py check-trade risk_manager approve_trade {TICKER} {shares} {amount_usd}`
+     - If `decision` is `BLOCK`, write a rejection artifact or return reasons only; do **not** issue a delegation token
+
+  5. **Issue Delegation (only if ALLOW)**:
+     - Write `output/risk-decisions/delegation-{TICKER}-{token_id}.json`
+     - Required fields: `issued_by` = `risk_manager`, `issued_to` = `trader`, `ticker`, `max_usd`, `max_shares`, `issued_at` (ISO 8601), `token_id` (unique)
+     - Optional: `side`, `recommendation_path`, `policy_snapshot_version`
+
+  6. **Return to User**:
+     - Summarize policy `decision`, key `checks`, and path to delegation file (or block reasons)
+
+  ## Example Delegation File (canonical)
+
   ```json
   {
-    "status": "approved",
-    "approved_action": "buy",
-    "approved_quantity": 10,
+    "issued_by": "risk_manager",
+    "issued_to": "trader",
     "ticker": "AAPL",
-    "expires_at": "2026-04-03T15:30:00Z",
-    "delegation_id": "DEL-AAPL-550e8400-e29b",
-    "policy_checks": {
-      "position_limit": "passed",
-      "buying_power": "passed",
-      "sector_concentration": "passed"
-    },
-    "timestamp": "2026-04-03T14:45:00Z"
+    "max_usd": 1000,
+    "max_shares": 5,
+    "issued_at": "2026-04-04T12:05:00+00:00",
+    "token_id": "del_aapl_550e8400",
+    "side": "buy",
+    "recommendation_path": "output/reports/AAPL-recommendation.json"
   }
   ```

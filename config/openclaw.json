@@ -2,20 +2,42 @@
   "$schema": "https://openclaw.ai/schemas/config/2026.3.json",
   "agents": {
     "defaults": {
-      "model": "google/gemini-3-flash-preview"
-    }
+      "model": "proxy/local-ollama"
+    },
+    "list": [
+      {
+        "id": "shieldtrade-analyst",
+        "name": "ShieldTrade Analyst",
+        "model": "proxy/local-ollama",
+        "skills": ["shieldtrade-analyst"],
+        "workspace": "."
+      },
+      {
+        "id": "shieldtrade-risk-manager",
+        "name": "ShieldTrade Risk Manager",
+        "model": "proxy/local-ollama",
+        "skills": ["shieldtrade-risk-manager"],
+        "workspace": "."
+      },
+      {
+        "id": "shieldtrade-trader",
+        "name": "ShieldTrade Trader",
+        "model": "proxy/local-ollama",
+        "skills": ["shieldtrade-trader"],
+        "workspace": "."
+      }
+    ]
   },
   "models": {
     "providers": {
-      "google": {
+      "proxy": {
         "baseUrl": "http://localhost:4000/v1",
         "apiKey": "proxy-managed",
+        "api": "openai-completions",
         "models": [
           {
-            "id": "gemini-3-flash-preview",
-            "name": "Gemini 3 Flash",
-            "api": "openai-completions",
-            "contextWindow": 1000000
+            "id": "local-ollama",
+            "name": "Local Ollama (via ShieldTrade proxy)"
           }
         ]
       }
@@ -25,27 +47,40 @@
     "mode": "local",
     "auth": {
       "mode": "token",
-      "token": "d17d4ab08c80922f2bff84cedcad95e54b75e7c2d16ebb01"
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
     }
   },
   "skills": {
     "load": {
       "extraDirs": [
-        "../skills"
+        "./skills"
       ]
     }
   },
   "plugins": {
     "allow": [
       "google",
-      "armoriq"
+      "armorclaw"
     ],
     "entries": {
       "google": {
         "enabled": true
       },
-      "armoriq": {
-        "enabled": true
+      "armorclaw": {
+        "enabled": true,
+        "config": {
+          "enabled": true,
+          "apiKey": "${ARMORIQ_API_KEY}",
+          "userId": "shieldtrade-user",
+          "agentId": "shieldtrade-pipeline",
+          "contextId": "shieldtrade",
+          "validitySeconds": 300,
+          "policy": {
+            "allow": ["bash", "read", "write", "web_fetch"],
+            "deny": []
+          },
+          "cryptoPolicyEnabled": false
+        }
       }
     }
   }

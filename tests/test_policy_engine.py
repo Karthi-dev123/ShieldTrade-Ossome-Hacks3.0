@@ -93,6 +93,36 @@ def test_check_delegation_expired(mock_policy):
 
 @patch('scripts.policy_engine._record_spend')
 @patch('scripts.policy_engine._get_today_spend', return_value=0)
+def test_validate_trade_allow_without_recording_spend(mock_get_spend, mock_rec_spend, mock_policy):
+    delegation = {
+        "issued_by": "risk_manager",
+        "issued_to": "trader",
+        "ticker": "AAPL",
+        "max_usd": 2500,
+        "max_shares": 10,
+        "issued_at": datetime.now(timezone.utc).isoformat(),
+        "token_id": "tok_x",
+    }
+    request = {
+        "agent": "trader",
+        "tool": "place_order",
+        "ticker": "AAPL",
+        "shares": 5,
+        "amount_usd": 500.0,
+        "domain": "paper-api.alpaca.markets",
+        "delegation": delegation,
+    }
+    mock_policy.setdefault("agent_roles", {})["trader"] = {
+        "allowed_tools": ["place_order"],
+        "denied_tools": [],
+    }
+    res = policy_engine.validate_trade(request, mock_policy, record_spend_if_allow=False)
+    assert res["decision"] == "ALLOW"
+    mock_rec_spend.assert_not_called()
+
+
+@patch('scripts.policy_engine._record_spend')
+@patch('scripts.policy_engine._get_today_spend', return_value=0)
 def test_validate_trade_no_token_blocked(mock_get_spend, mock_rec_spend, mock_policy):
     request = {
         "agent": "trader",
@@ -103,3 +133,143 @@ def test_validate_trade_no_token_blocked(mock_get_spend, mock_rec_spend, mock_po
     res = policy_engine.validate_trade(request, mock_policy)
     assert res["decision"] == "BLOCK"
     assert any("Trader must provide delegation token" in r for r in res["blocked_reasons"])
+
+
+def _valid_delegation(max_shares=10, max_usd=1000.0):
+    return {
+        "issued_by": "risk_manager",
+        "issued_to": "trader",
+        "ticker": "AAPL",
+        "max_usd": max_usd,
+        "max_shares": max_shares,
+        "issued_at": datetime.now(timezone.utc).isoformat(),
+        "token_id": "tok_cap_test",
+    }
+
+
+def test_check_delegation_exceeds_max_shares(mock_policy):
+    delegation = _valid_delegation(max_shares=5)
+    res = policy_engine.check_delegation(delegation, mock_policy, shares=10)
+    assert res["result"] == "FAIL"
+    assert "exceeds delegation cap" in res["detail"]
+    assert "10 shares" in res["detail"]
+
+
+def test_check_delegation_exceeds_max_usd(mock_policy):
+    delegation = _valid_delegation(max_usd=500.0)
+    res = policy_engine.check_delegation(delegation, mock_policy, amount_usd=600.0)
+    assert res["result"] == "FAIL"
+    assert "exceeds delegation cap" in res["detail"]
+    assert "$600.00" in res["detail"]
+
+
+def test_check_delegation_within_caps(mock_policy):
+    delegation = _valid_delegation(max_shares=10, max_usd=1000.0)
+    res = policy_engine.check_delegation(delegation, mock_policy, shares=5, amount_usd=500.0)
+    assert res["result"] == "PASS"
+
+
+# ---------------------------------------------------------------------------
+# Step 1 — delegation YAML ceiling tests
+# ---------------------------------------------------------------------------
+
+def test_check_delegation_exceeds_yaml_ceiling_shares(mock_policy):
+    """Token max_shares above the policy ceiling is rejected."""
+    mock_policy["delegation"]["trader_delegation"]["max_shares_per_delegation"] = 50
+    delegation = _valid_delegation(max_shares=100)
+    res = policy_engine.check_delegation(delegation, mock_policy)
+    assert res["result"] == "FAIL"
+    assert "exceeds policy ceiling" in res["detail"]
+    assert "50" in res["detail"]
+
+
+def test_check_delegation_exceeds_yaml_ceiling_usd(mock_policy):
+    """Token max_usd above the policy ceiling is rejected."""
+    mock_policy["delegation"]["trader_delegation"]["max_usd_per_delegation"] = 500
+    delegation = _valid_delegation(max_usd=1500.0)
+    res = policy_engine.check_delegation(delegation, mock_policy)
+    assert res["result"] == "FAIL"
+    assert "exceeds policy ceiling" in res["detail"]
+    assert "500" in res["detail"]
+
+
+def test_check_delegation_at_yaml_ceiling_passes(mock_policy):
+    """Token exactly at the policy ceiling is accepted."""
+    mock_policy["delegation"]["trader_delegation"]["max_shares_per_delegation"] = 10
+    mock_policy["delegation"]["trader_delegation"]["max_usd_per_delegation"] = 1000.0
+    delegation = _valid_delegation(max_shares=10, max_usd=1000.0)
+    res = policy_engine.check_delegation(delegation, mock_policy)
+    assert res["result"] == "PASS"
+
+
+# ---------------------------------------------------------------------------
+# Step 3 — earnings blackout tests
+# ---------------------------------------------------------------------------
+
+def test_earnings_blackout_disabled(mock_policy):
+    mock_policy["trading"]["time_restrictions"]["earnings_blackout"] = {"enabled": False}
+    res = policy_engine.check_earnings_blackout("AAPL", mock_policy)
+    assert res["result"] == "PASS"
+    assert "disabled" in res["detail"]
+
+
+def test_earnings_blackout_no_event_for_ticker(mock_policy):
+    mock_policy["trading"]["time_restrictions"]["earnings_blackout"] = {
+        "enabled": True,
+        "window_before_minutes": 30,
+        "window_after_minutes": 30,
+        "events": [{"ticker": "MSFT", "date": "2026-12-31T17:00:00-05:00"}],
+    }
+    res = policy_engine.check_earnings_blackout("AAPL", mock_policy)
+    assert res["result"] == "PASS"
+
+
+def test_earnings_blackout_in_window(mock_policy):
+    """Blackout window is active when now falls between window_start and window_end."""
+    from datetime import datetime, timezone
+    event_time = datetime.now(timezone.utc).isoformat()
+    mock_policy["trading"]["time_restrictions"]["earnings_blackout"] = {
+        "enabled": True,
+        "window_before_minutes": 60,
+        "window_after_minutes": 60,
+        "events": [{"ticker": "AAPL", "date": event_time}],
+    }
+    res = policy_engine.check_earnings_blackout("AAPL", mock_policy)
+    assert res["result"] == "FAIL"
+    assert "blackout" in res["detail"].lower()
+
+
+def test_earnings_blackout_outside_window(mock_policy):
+    mock_policy["trading"]["time_restrictions"]["earnings_blackout"] = {
+        "enabled": True,
+        "window_before_minutes": 30,
+        "window_after_minutes": 30,
+        "events": [{"ticker": "AAPL", "date": "2026-12-31T17:00:00-05:00"}],
+    }
+    res = policy_engine.check_earnings_blackout("AAPL", mock_policy)
+    assert res["result"] == "PASS"
+
+
+def test_earnings_blackout_missing_events_fails_closed(mock_policy):
+    """Missing events list → fail-closed when blackout is enabled."""
+    mock_policy["trading"]["time_restrictions"]["earnings_blackout"] = {
+        "enabled": True,
+        "window_before_minutes": 30,
+        "window_after_minutes": 30,
+        # no "events" key
+    }
+    res = policy_engine.check_earnings_blackout("AAPL", mock_policy)
+    assert res["result"] == "FAIL"
+    assert "fail-closed" in res["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Step 4 — daily-spend timezone test
+# ---------------------------------------------------------------------------
+
+def test_today_key_uses_eastern_timezone():
+    """_today_key() must match today's date in ET, not UTC."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    et_today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    assert policy_engine._today_key() == et_today

@@ -1,39 +1,129 @@
 # ShieldTrade — Architecture
 
-## System Overview
+## Design Philosophy
 
-### LLM Proxy Layer
-To bypass provider strict rate limits, OpenClaw does not communicate directly with the LLM API. Instead, requests are routed through a local interception layer:
+Intent must be **enforced**, not inferred.
 
-* **Proxy Server:** `scripts/proxy.js` (Express.js server running on port 4000)
-* **Target Model:** `gemini-3-flash-preview`
-* **Function:** Intercepts requests from OpenClaw aimed at the Google GenAI SDK, applies key rotation, and proxies the requests to Google's API to ensure the agent instruction footprint can be processed without rate limit failures.
+ShieldTrade implements a layered enforcement stack where every financial action passes through:
+1. A **declarative YAML policy model** (rules live in config, not code)
+2. A **typed Pydantic intent model** (every request is schema-validated before any check runs)
+3. A **cryptographic intent token** (HMAC-SHA256 signed by ArmorIQ stub before each paper order)
+4. The **Alpaca paper-trading API** (no real money ever touched)
+
+OpenClaw provides the agent runtime and skills infrastructure. Enforcement is handled by the local Python stack — this is an intentional architectural decision to eliminate cloud dependencies during inference.
+
+---
+
+## Runtime Stack
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    OpenClaw Gateway                      │
-│                  (Node.js / TypeScript)                   │
-│                                                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │   Analyst     │  │ Risk Manager │  │    Trader     │  │
-│  │   Agent       │  │    Agent     │  │    Agent      │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
-│         │                  │                  │          │
-│  ┌──────┴──────────────────┴──────────────────┴───────┐ │
-│  │              ArmorClaw Intent Engine                 │ │
-│  │         (Policy YAML → Cryptographic Tokens)        │ │
-│  └─────────────────────────────────────────────────────┘ │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-          ┌───────────────┼───────────────┐
-          ▼               ▼               ▼
-   ┌────────────┐  ┌────────────┐  ┌────────────┐
-   │  Python     │  │  Supabase  │  │  Alpaca    │
-   │  Scripts    │  │  Audit DB  │  │  Paper API │
-   │ (bridge/    │  │            │  │            │
-   │  policy)    │  │            │  │            │
-   └────────────┘  └────────────┘  └────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        OpenClaw Gateway                          │
+│                    (port 18789, local mode)                       │
+│                                                                   │
+│  ┌─────────────┐   ┌──────────────────┐   ┌─────────────────┐  │
+│  │  Analyst     │   │  Risk Manager    │   │    Trader        │  │
+│  │  Agent       │   │  Agent           │   │    Agent         │  │
+│  │  (SKILL.md)  │   │  (SKILL.md)      │   │    (SKILL.md)    │  │
+│  └──────┬───────┘   └────────┬─────────┘   └────────┬────────┘  │
+└─────────┼────────────────────┼─────────────────────-┼────────────┘
+          │  CLI handoffs       │  (JSON artifacts)    │
+          ▼                     ▼                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Local Python Enforcement Layer                       │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  scripts/policy_engine.py                                  │  │
+│  │                                                            │  │
+│  │  TradeIntent (Pydantic)   ←── schema-validates request     │  │
+│  │  ShieldTradePolicy (Pydantic) ←── validates YAML at load   │  │
+│  │                                                            │  │
+│  │  check_role_permission()  ← agent_roles from YAML          │  │
+│  │  check_ticker()           ← approved_tickers from YAML     │  │
+│  │  check_order_size()       ← order_limits from YAML         │  │
+│  │  check_daily_limit()      ← daily_aggregate_max_usd        │  │
+│  │  check_market_hours()     ← time_restrictions from YAML    │  │
+│  │  check_earnings_blackout()← blackout events from YAML      │  │
+│  │  check_delegation()       ← delegation caps from YAML      │  │
+│  │  check_data_safety()      ← allowed_domains from YAML      │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  scripts/armoriq_stub.py                                   │  │
+│  │  HMAC-SHA256 intent token → attached to every paper order  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  scripts/alpaca_bridge.py                                  │  │
+│  │  Paper-trading execution (Alpaca paper API only)           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  config/shieldtrade-policies.yaml  ←── single source of truth   │
+│  (all limits, tickers, roles, delegation caps declared here)     │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### LLM Routing (inference only)
+
+OpenClaw does not communicate directly with an LLM API. Requests are proxied through a local shim:
+
+```
+OpenClaw Gateway → scripts/proxy.js (port 4000) → Ollama (OLLAMA_BASE_URL)
+```
+
+`proxy.js` injects the `data: [DONE]\n\n` SSE sentinel when Ollama closes a stream without it, preventing OpenClaw agent "stream ended" errors.
+
+---
+
+## Why Enforcement is Local (not an OpenClaw Plugin)
+
+The PS allows use of ArmorClaw as an intent enforcement plugin, but also permits custom enforcement layers. ShieldTrade implements enforcement locally for three reasons:
+
+1. **No cloud dependency** — Ollama + proxy.js + policy_engine.py run entirely offline. Enforcement cannot be bypassed by a cloud outage.
+2. **Determinism** — The YAML policy is a static file in the repo. Every check is reproducible and auditable without an API call.
+3. **Transparency** — Judges can read `config/shieldtrade-policies.yaml` and `scripts/policy_engine.py` to see exactly what is enforced and why.
+
+`config/openclaw.json` lists only the `google` plugin. **This is intentional** — ArmorIQ enforcement runs in-process via `armoriq_stub.py`, not as an OpenClaw plugin.
+
+---
+
+## Data Flow
+
+### Happy Path (Successful Trade)
+
+```
+1. Analyst stage
+   → fetches/assumes market price
+   → writes output/reports/{TICKER}-recommendation.json
+
+2. Risk stage
+   → reads recommendation
+   → calls validate_trade(request, policy, record_spend_if_allow=False)
+   → if ALLOW: builds & writes output/risk-decisions/delegation-{TICKER}-{id}.json
+
+3. Trader stage
+   → reads delegation token
+   → calls validate_trade(request+delegation, policy, record_spend_if_allow=True)
+   → if ALLOW: armoriq_stub signs intent token
+               alpaca_bridge places paper order with token attached
+               writes output/trade-logs/execution-{TICKER}-{ISO}.json
+               records spend in output/trade-logs/daily-spend.json
+```
+
+### Blocked Path (Policy Violation)
+
+```
+1. Any stage → requests action outside policy scope
+2. validate_trade() runs all deterministic checks
+3. Any FAIL → decision = BLOCK, blocked_reasons populated
+4. Downstream stages are skipped
+5. Rejection JSON written to output/risk-decisions/ or output/trade-logs/
+```
+
+---
 
 ## Agent Directory Boundaries
 
@@ -41,85 +131,77 @@ To bypass provider strict rate limits, OpenClaw does not communicate directly wi
 
 | Agent | Read Access | Write Access |
 |---|---|---|
-| **Analyst** | `/data/market/*`, `/data/earnings/*` | `/output/reports/*`, `/output/thoughts/analyst.jsonl` |
-| **Risk Manager** | `/output/reports/*` | `/output/risk-decisions/*`, `/output/thoughts/risk-manager.jsonl` |
-| **Trader** | `/output/risk-decisions/*` | `/output/trade-logs/*`, `/output/thoughts/trader.jsonl` |
+| **Analyst** | `/data/market/*`, `/data/earnings/*` | `/output/reports/*` |
+| **Risk Manager** | `/output/reports/*`, `/data/portfolio/*` | `/output/risk-decisions/*` |
+| **Trader** | `/output/risk-decisions/*` | `/output/trade-logs/*` |
 
-### Boundary Enforcement
-- ArmorClaw enforces file access at the intent token level
-- Each agent's `writeAccess` is declared in `config/openclaw.json`
-- Policy violations are logged to `audit_log` in Supabase and blocked deterministically
+File-level isolation is declared in `config/shieldtrade-policies.yaml` under `agent_roles.*.file_access`. Skills reference these paths; the orchestrator respects them by design.
+
+---
+
+## Security Model
+
+### Enforcement Layers (outermost → innermost)
+
+| Layer | Mechanism | Where declared |
+|-------|-----------|----------------|
+| Role permission | `check_role_permission()` | `agent_roles.*.allowed_tools` in YAML |
+| Market hours | `check_market_hours()` | `trading.time_restrictions.market_hours_only` |
+| Ticker allow-list | `check_ticker()` | `trading.approved_tickers.symbols` |
+| Earnings blackout | `check_earnings_blackout()` | `trading.time_restrictions.earnings_blackout` |
+| Order size cap | `check_order_size()` | `trading.order_limits.per_order_max_usd` |
+| Share count cap | `check_share_count()` | `trading.order_limits.per_order_max_shares` |
+| Daily spend cap | `check_daily_limit()` | `trading.order_limits.daily_aggregate_max_usd` |
+| Network exfiltration | `check_data_safety()` | `data_safety.no_external_exfiltration.allowed_domains` |
+| Delegation scope | `check_delegation()` | `delegation.trader_delegation.*` |
+| Intent token | ArmorIQ HMAC-SHA256 | `scripts/armoriq_stub.py` |
+
+All checks are **fail-closed**: missing or malformed policy sections block rather than allow.
+
+### Credential Safety
+
+- No credentials in source code.
+- `.env` is gitignored.
+- Blocked paths in policy: `~/.openclaw/credentials`, `*.env`, `*.key`, `*.pem`, `*.secret`.
+
+---
 
 ## Directory Structure
 
 ```
 shieldtrade/
-├── config/                          # OpenClaw + ArmorClaw configuration
-│   ├── openclaw.json
-│   └── shieldtrade-policies.yaml
+├── config/
+│   ├── openclaw.json              # OpenClaw gateway + model config
+│   └── shieldtrade-policies.yaml  # Declarative policy (single source of truth)
 │
-├── scripts/                         # Python ONLY
-│   ├── alpaca_bridge.py
-│   └── policy_engine.py
+├── scripts/
+│   ├── policy_engine.py           # Enforcement engine (Pydantic models + checks)
+│   ├── armoriq_stub.py            # HMAC-SHA256 intent token issuance
+│   ├── alpaca_bridge.py           # Paper-trading execution
+│   ├── orchestrate_pipeline.py    # E2E analyst → risk → trader orchestrator
+│   ├── proxy.js                   # OpenAI-compatible proxy to Ollama
+│   └── start-all.py               # Service startup (proxy + gateway)
 │
-├── skills/                          # OpenClaw agent skill definitions
-│   ├── shieldtrade-analyst/
-│   ├── shieldtrade-risk-manager/
-│   └── shieldtrade-trader/
+├── skills/
+│   ├── shieldtrade-analyst/SKILL.md
+│   ├── shieldtrade-risk-manager/SKILL.md
+│   └── shieldtrade-trader/SKILL.md
 │
-├── output/                          # Agent output (gitignored except .gitkeep)
+├── output/                        # Agent artifacts (gitignored except .gitkeep)
 │   ├── reports/
 │   ├── risk-decisions/
-│   ├── trade-logs/
-│   └── thoughts/
-│
-├── data/
-│   ├── market/
-│   └── earnings/
+│   └── trade-logs/
 │
 ├── tests/
-│   └── test_policy_engine.py
+│   ├── test_policy_engine.py      # 23 unit tests
+│   ├── test_orchestrate_pipeline.py # 9 integration tests
+│   ├── test_m2_policy_guards.py   # 3 CLI contract tests
+│   └── test_armoriq_stub.py       # 7 ArmorIQ stub tests
 │
-├── docs/                            # All documentation lives here
-│   ├── instructions.md              # How to use these docs
-│   ├── requirements.md              # Stack, versions, constraints
-│   ├── architecture.md              # This file
-│   ├── memory.md                    # Session tracking
-│   ├── armoriqdocs.md               # ArmorIQ SDK reference
-│   └── AGENTS.md                    # Agent architecture reference (movable)
-│
-├── .gitignore
-└── .env.example
+└── docs/
+    ├── architecture.md            # This file
+    ├── contracts.md               # Schema freeze — handoff JSON shapes + CLI
+    ├── submission.md              # Judge-facing: intent model, policy, enforcement
+    ├── demo-script.md             # 2-minute judge demo with commands
+    └── troubleshooting.md         # Startup and runtime troubleshooting
 ```
-
-## Data Flow
-
-### Happy Path (Successful Trade)
-```
-1. Analyst → fetches market data → writes recommendation to /output/reports/
-2. Risk Manager → reads recommendation → validates against policy → writes delegation token to /output/risk-decisions/
-3. Trader → reads delegation token → validates scope/expiry → places order via Alpaca paper API → logs to /output/trade-logs/
-```
-
-### Blocked Path (Policy Violation)
-```
-1. Any Agent → attempts action outside scope
-2. ArmorClaw → evaluates intent against policy YAML
-3. Policy Engine → deterministic FAIL (ticker not in list, over limit, expired token, etc.)
-4. Action → BLOCKED, logged to audit_log and /output/trade-logs/
-```
-
-## Security Model
-
-### Layers
-1. **ArmorClaw Intent Tokens** — Cryptographic proof of authorized action
-2. **Policy YAML** — Declarative, deterministic rules (no LLM interpretation)
-3. **Delegation Scoping** — Trader can only act within Risk Manager's approved bounds
-4. **File-Level Isolation** — Each agent can only write to its own directories
-5. **Network Restriction** — Only `paper-api.alpaca.markets` and `data.alpaca.markets` allowed
-6. **Fail-Closed** — If ArmorClaw is unreachable, everything blocks
-
-### Credential Safety
-- No credentials in source code
-- `.env` is gitignored
-- Blocked paths: `~/.openclaw/credentials`, `*.env`, `*.key`, `*.pem`

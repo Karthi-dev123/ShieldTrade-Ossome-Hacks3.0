@@ -14,7 +14,7 @@
 We switched the gateway to `llama-3.1-8b-instant`. However, the entire agent instruction context footprint (skills, loaded workspace scopes, native instructions) spans approximately 23k tokens. This exceeded the strict Groq Free Tier limits for both `llama-3.3-70b` (Limit: 12000 TPM) and `llama-3.1-8b-instant` (Limit: 6000 TPM).
 4. **Git State**: A git repository was initialized on the final successful architecture footprint and committed.
 
-**Current Blocker**: Resolved. The previous Groq token limit issue (23k tokens) was bypassed using a custom Gemini rotation proxy (`gemini-3-flash-preview`). E2E testing validates that OpenClaw routes intents successfully through the local proxy and ArmorIQ policy engine.
+**Current Blocker**: Resolved. The previous Groq token limit issue (23k tokens) is now addressed with a local Ollama-routed proxy (`OLLAMA_MODEL`) on port 4000. E2E testing validates that OpenClaw routes intents successfully through the local proxy and ArmorIQ policy engine.
 
 ## Active Decisions
 _No pending decisions._
@@ -25,6 +25,6 @@ _None._
 ## Session Log
 | Timestamp | Action | Result |
 |---|---|---|
-| 2026-04-03 | Implemented local Express proxy for LLM | Bypassed Groq/Anthropic rate limits using `gemini-3-flash-preview` and a custom Gemini rotating proxy on port 4000. |
+| 2026-04-03 | Implemented local Express proxy for LLM | Routed OpenClaw requests through local Ollama (`OLLAMA_MODEL`) using a custom proxy on port 4000. |
 
 | 2026-04-03 | Validated E2E loopback and Policy Engine | Passing test suite for deterministic policy blocking (`test_policy_engine.py`) and E2E simulation script successfully communicating with Gateway + Proxy. |

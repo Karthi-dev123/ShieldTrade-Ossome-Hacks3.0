@@ -1,90 +1,98 @@
 ---
 name: shieldtrade-trader
-description: Execute approved trades using delegation tokens. Validates intent tokens, verifies policy compliance, communicates with Alpaca API to place orders, and logs all executed trades for audit trail.
+description: Execute paper trades only after validating delegation via policy_engine and a full trade request via validate-all. Logs executions per docs/contracts.md. Alpaca bridge is scripts/alpaca_bridge.py.
 tools:
   - name: delegation_token_reader
-    description: Read and validate signed delegation tokens from /output/risk-decisions/
-    usage: "Read delegation token DEL-AAPL-550e8400"
+    description: Read delegation JSON from output/risk-decisions/ (match ticker or token_id)
+    usage: "Read output/risk-decisions/delegation-{TICKER}-{token_id}.json"
   - name: policy_engine.py check-delegation
-    description: Validate delegation token signature and check expiration
-    usage: "policy_engine.py check-delegation {DELEGATION_JSON}"
+    description: Validate delegation structure and TTL (stdout is one JSON check object)
+    usage: "python scripts/policy_engine.py check-delegation '{\"issued_by\":\"risk_manager\",...}'"
+  - name: policy_engine.py validate-all
+    description: Full trade gate for trader place_order; must include delegation object per docs/contracts.md §3
+    usage: "python scripts/policy_engine.py validate-all '{\"agent\":\"trader\",\"tool\":\"place_order\",...}'"
   - name: alpaca_bridge.py order
-    description: Place market order on Alpaca paper trading account
-    usage: "alpaca_bridge.py order AAPL 10 buy"
+    description: Submit market order; optional 4th arg links audit policy_check_id
+    usage: "python scripts/alpaca_bridge.py order AAPL 5 buy [POLICY_CHECK_ID]"
   - name: file_write
-    description: Write trade execution log to /output/trade-logs/
-    usage: "Write to /output/trade-logs/execution-{TICKER}-{TIMESTAMP}.json"
+    description: Write execution log to output/trade-logs/ per docs/contracts.md §5
+    usage: "Write output/trade-logs/execution-{TICKER}-{ISO_TIMESTAMP}.json"
 forbidden_actions:
-  - quote: "TRADER MUST NEVER fetch quotes. Use analyst recommendations and delegation tokens only."
-  - bars: "TRADER MUST NEVER fetch historical bars. Delegation token contains necessary context."
-  - place_order_without_delegation: "TRADER MUST ALWAYS validate delegation token before any order execution."
-  - exceed_delegation_quantity: "TRADER MUST NEVER exceed the quantity approved in delegation token."
+  - quote: "TRADER MUST NEVER fetch quotes. Use delegation and prior artifacts only."
+  - bars: "TRADER MUST NEVER fetch historical bars."
+  - place_order_without_delegation: "TRADER MUST run validate-all with delegation before place_order."
+  - exceed_delegation_quantity: "Order qty must not exceed delegation max_shares; notional should respect max_usd."
 workflow: |
+  ## Contract
+
+  - Delegation file: **docs/contracts.md §2**
+  - Trade request for gate: **docs/contracts.md §3**
+  - Execution log: **docs/contracts.md §5**
+
+  `check-delegation` takes a **single JSON string** argument (quote safely in the shell).
+
+  After `validate-all` returns `ALLOW`, pass `policy_check_id` from that JSON into `alpaca_bridge.py order` as the optional fourth argument when available.
+
   ## Workflow
-  
-  1. **User Request**: User asks to execute an approved trade
-     - Example: "Execute the approved AAPL trade"
-  
-  2. **Find Delegation Token**:
-     - Search `/output/risk-decisions/` for latest delegation file
-     - Match by ticker or user-specified delegation ID
-  
+
+  1. **User Request**: e.g. "Execute the approved AAPL trade"
+
+  2. **Load Delegation**:
+     - Read the correct file under `output/risk-decisions/` (e.g. `delegation-AAPL-{token_id}.json`)
+
   3. **Validate Delegation**:
-     - Read delegation JSON: extract approved_action, approved_quantity, expires_at
-     - Call `policy_engine.py check-delegation {DELEGATION_JSON}`
-     - Verify token signature is valid (ArmorClaw intent verification)
-     - Verify token has not expired
-     - Print delegation validation details for audit log
-  
-  4. **Enforce Quantity Limits**:
-     - Read approved_quantity from delegation
-     - ENSURE user request does not exceed approved quantity
-     - REJECT if requested quantity > approved quantity
-  
-  5. **Place Order on Alpaca**:
-     - Call `alpaca_bridge.py order {TICKER} {QUANTITY} {SIDE}`
-     - Capture order ID and execution timestamp
-  
-  6. **Log Trade Execution**:
-     - Create JSON file: `/output/trade-logs/execution-{TICKER}-{TIMESTAMP}.json`
-     - Include: order_id, ticker, quantity, side, execution_price, status, timestamp, delegation_id
-  
-  7. **Return to User**:
-     - Display trade confirmation with order ID
-     - Point user to Alpaca dashboard for real-time updates
-     - DO NOT re-use same delegation token for multiple trades
-  
-  ## Example Output
+     - `python scripts/policy_engine.py check-delegation '<paste_minified_delegation_json>'`
+     - Expect `"result": "PASS"` on the delegation check; if `FAIL`, stop
+
+  4. **Enforce Caps (agent logic)**:
+     - Planned `shares` must be ≤ delegation `max_shares`
+     - Planned notional (`shares` × expected price or limit) should be ≤ delegation `max_usd` and policy limits
+
+  5. **Full Trade Gate**:
+     - Build JSON per §3 (agent `trader`, tool `place_order`, ticker, shares, amount_usd, domain `paper-api.alpaca.markets`, embedded `delegation`)
+     - `python scripts/policy_engine.py validate-all '<that_json>'`
+     - If `decision` is `BLOCK`, stop and surface `blocked_reasons`
+
+  6. **Place Order**:
+     - `python scripts/alpaca_bridge.py order {TICKER} {QTY} {SIDE} [policy_check_id]`
+
+  7. **Log Execution**:
+     - Write `output/trade-logs/execution-{TICKER}-{ISO_TIMESTAMP}.json` with `schema_version`, `timestamp`, `delegation_token_id` (from `token_id`), optional `policy_check_id`, and `order` object matching bridge stdout
+
+  8. **Return to User**:
+     - Order id, log path, and note that delegation must not be reused for additional fills unless policy explicitly allows
+
+  ## Example Execution Log (canonical)
+
   ```json
   {
-    "status": "executed",
-    "order_id": "ALX-12345678",
-    "ticker": "AAPL",
-    "quantity": 10,
-    "side": "buy",
-    "execution_price": 150.30,
-    "delegation_id": "DEL-AAPL-550e8400-e29b",
-    "delegation_validation": {
-      "signature_valid": true,
-      "not_expired": true,
-      "quantity_approved": 10
-    },
-    "timestamp": "2026-04-03T14:50:00Z"
+    "schema_version": "1.0",
+    "timestamp": "2026-04-04T12:06:30+00:00",
+    "delegation_token_id": "del_aapl_550e8400",
+    "policy_check_id": "row_abc123",
+    "order": {
+      "order_id": "…",
+      "symbol": "AAPL",
+      "qty": "5",
+      "side": "buy",
+      "type": "market",
+      "status": "accepted",
+      "submitted_at": "2026-04-04T12:06:29+00:00",
+      "time_in_force": "day"
+    }
   }
   ```
-  
-  ## Critical Enforcement
-  
-  ### ArmorClaw Intent Verification Block
-  
-  When a trade is executed, the system MUST log:
+
+  ## Audit banner (human-readable)
+
+  When executing, echo a short audit block, e.g.:
+
   ```
-  ========== DELEGATION VALIDATION ==========
-  Delegation ID: {DEL-UUID}
-  Token Signature: VALID
-  Expiration: VALID (expires 2026-04-03T15:30:00Z)
-  Approved Action: BUY 10 AAPL
-  Policy Engine Status: PASSED ALL CHECKS
-  Order Placement: AUTHORIZED
+  ========== DELEGATION / POLICY ==========
+  token_id: del_aapl_550e8400
+  issued_at: 2026-04-04T12:05:00+00:00
+  check-delegation: PASS/FAIL (from policy_engine JSON)
+  validate-all decision: ALLOW/BLOCK
+  order: authorized only if both delegation valid and validate-all ALLOW
   ==========================================
   ```

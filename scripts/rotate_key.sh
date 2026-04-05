@@ -1,5 +1,4 @@
 #!/bin/bash
-# Simple random key rotation
-KEYS=("$GEMINI_API_KEY1" "$GEMINI_API_KEY2" "$GEMINI_API_KEY3")
-IDX=$((RANDOM % 3))
-echo -n "${KEYS[$IDX]}"
+# Legacy helper kept for compatibility with older scripts.
+# Returns the active local model name instead of rotating cloud keys.
+echo -n "${OLLAMA_MODEL:-llama3.2:3b}"

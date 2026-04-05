@@ -74,7 +74,9 @@ $envContent = @"
 ALPACA_API_KEY=
 ALPACA_SECRET_KEY=
 ARMORIQ_API_KEY=
-GEMINI_API_KEY=
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
+OLLAMA_API_KEY=
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 "@
@@ -112,12 +114,12 @@ pip install alpaca-py supabase PyYAML==6.0.2 filelock==3.16.1 pytest==8.3.5 http
 
 ## 6. Running the System
 
-To bypass API rate limits, you must run the local proxy and the OpenClaw gateway simultaneously. **You need two separate PowerShell windows.**
+To run the local model pipeline, you must run the local proxy and the OpenClaw gateway simultaneously. **You need two separate PowerShell windows.**
 
 **Terminal Window 1 (The LLM Proxy):**
 ```powershell
 Set-Location "path\to\shieldtrade"
-# Make sure your .env has GEMINI_API_KEY set
+# Make sure your .env has OLLAMA_BASE_URL and OLLAMA_MODEL set
 node scripts\proxy.js
 # This should output "Proxy running on port 4000"
 ```

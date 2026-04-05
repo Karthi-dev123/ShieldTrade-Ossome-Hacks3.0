@@ -164,10 +164,13 @@ def cmd_bars(symbol: str, timeframe: str = "1Day", limit: int = 30) -> dict:
 def cmd_order(symbol: str, qty: int, side: str, policy_check_id: str | None = None) -> dict:
     from alpaca.trading.requests import MarketOrderRequest
     from alpaca.trading.enums import OrderSide, TimeInForce
+    import armoriq_stub
 
     side_enum = {"buy": OrderSide.BUY, "sell": OrderSide.SELL}.get(side.lower())
     if side_enum is None:
         raise ValueError(f"Invalid side '{side}'. Must be 'buy' or 'sell'.")
+
+    intent_token = armoriq_stub.issue(symbol, qty, side, policy_check_id)
 
     client = _trading_client()
     req = MarketOrderRequest(
@@ -187,6 +190,7 @@ def cmd_order(symbol: str, qty: int, side: str, policy_check_id: str | None = No
         "status": str(order.status),
         "submitted_at": order.submitted_at.isoformat() if order.submitted_at else None,
         "time_in_force": str(order.time_in_force),
+        "armoriq_token": intent_token,
     }
 
     supabase_logger.log("trade_events", {

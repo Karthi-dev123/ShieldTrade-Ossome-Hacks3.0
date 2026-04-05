@@ -19,7 +19,7 @@
 | pnpm | 10.6.5 | `npm install -g pnpm@10.6.5` |
 | TypeScript | 5.8.3 | via pnpm |
 | Python | 3.12.3 | System or `pyenv install 3.12.3` |
-| LLM | gemini-3-flash-preview | Local Express Proxy (rotating keys) |
+| LLM Backend | local Ollama model | `OLLAMA_BASE_URL` + `OLLAMA_MODEL` via local proxy |
 | alpaca-py | latest stable | `pip install alpaca-py` |
 | Supabase | latest stable | `pip install supabase` |
 | PyYAML | 6.0.2 | `pip install PyYAML==6.0.2` |
@@ -37,7 +37,7 @@
 - `market_hours_only.enabled` = false during dev (IST ≠ ET)
 - No real money at any stage
 - Supabase free tier (500MB) — one project only
-- **LLM Proxy:** Must run local Express proxy on port 4000 (`scripts/proxy.js`) to handle Gemini API key rotation and bypass rate limits.
+- **LLM Proxy:** Must run local Express proxy on port 4000 (`scripts/proxy.js`) to route OpenAI-compatible chat requests to local Ollama.
 
 ## Runtime Isolation
 
@@ -68,7 +68,9 @@
 ALPACA_API_KEY=
 ALPACA_SECRET_KEY=
 ARMORIQ_API_KEY=
-GEMINI_API_KEY=
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
+OLLAMA_API_KEY=
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 ```
